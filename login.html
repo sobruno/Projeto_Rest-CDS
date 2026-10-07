@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<title>Entrar | CDS</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { sans: ["Figtree", "system-ui", "sans-serif"] },
+    colors: { ink: "#16201d", mute: "#5d6b66", line: "#dfe3df", paper: "#f4f5f2",
+      brand: { DEFAULT: "#0f5c4a", dark: "#0a4436" }, entrada: "#137a4b", saida: "#b3261e" }
+  } } }
+</script>
+<style type="text/tailwindcss">
+  @layer components {
+    .campo { @apply w-full rounded-md border border-line bg-white px-3 py-2.5 text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/25; }
+    .rotulo { @apply mb-1.5 block text-sm font-medium text-ink; }
+    .btn { @apply rounded-md bg-brand px-5 py-2.5 font-semibold text-white hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand; }
+    .btn-sec { @apply rounded-md border border-line bg-white px-5 py-2.5 font-semibold text-ink hover:bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand; }
+    .erro { @apply rounded-md bg-saida/10 px-3 py-2 text-sm text-saida; }
+  }
+</style>
+</head>
+<body class="flex min-h-screen items-center justify-center bg-paper px-4 font-sans text-ink">
+  <main class="w-full max-w-sm">
+    <div class="mb-6 text-center">
+      <h1 class="text-5xl font-bold tracking-tight">CDS</h1>
+      <p class="text-mute">Carteira Digital Simplificada</p>
+    </div>
+
+    <form id="form-login" class="space-y-5 rounded-xl border border-line bg-white p-8 shadow-sm" novalidate>
+      <!-- API BACKEND: payload esperado no login
+           {
+             "username": "nome de usuário cadastrado",
+             "password": "senha informada pelo usuário"
+           }
+           Resposta esperada do backend: token/session ou dados do usuário autenticado.
+      -->
+      <p id="erro-login" role="alert" class="erro hidden"></p>
+      <div>
+        <label for="username" class="rotulo">Nome de usuário</label>
+        <input id="username" name="username" type="text" autocomplete="username" required class="campo">
+      </div>
+      <div>
+        <label for="password" class="rotulo">Senha</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required class="campo">
+      </div>
+      <button type="submit" class="btn w-full">Entrar</button>
+      <p class="pt-2 text-center text-sm text-mute">
+        Não possui uma conta?
+        <a href="cadastro.html" class="font-semibold text-brand underline underline-offset-2">Cadastre-se</a>
+      </p>
+    </form>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

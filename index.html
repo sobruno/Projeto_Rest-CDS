@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<title>Minha carteira | CDS</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { sans: ["Figtree", "system-ui", "sans-serif"] },
+    colors: { ink: "#16201d", mute: "#5d6b66", line: "#dfe3df", paper: "#f4f5f2",
+      brand: { DEFAULT: "#0f5c4a", dark: "#0a4436" }, entrada: "#137a4b", saida: "#b3261e" }
+  } } }
+</script>
+<style type="text/tailwindcss">
+  @layer components {
+    .campo { @apply w-full rounded-md border border-line bg-white px-3 py-2.5 text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/25; }
+    .rotulo { @apply mb-1.5 block text-sm font-medium text-ink; }
+    .btn { @apply rounded-md bg-brand px-5 py-2.5 font-semibold text-white hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand; }
+    .btn-sec { @apply rounded-md border border-line bg-white px-5 py-2.5 font-semibold text-ink hover:bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand; }
+    .erro { @apply rounded-md bg-saida/10 px-3 py-2 text-sm text-saida; }
+  }
+</style>
+</head>
+<body class="min-h-screen bg-paper font-sans text-ink">
+
+  <header class="border-b border-line bg-white">
+    <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
+
+      <div class="w-20">
+      </div>
+
+      <div class="text-center">
+        <h1 class="text-4xl font-bold tracking-tight">CDS</h1>
+        <p class="text-sm text-mute">Carteira Digital Simplificada</p>
+      </div>
+
+      <div class="w-20 text-right">
+        <a href="login.html">
+        <button id="btn-sair" type="button" class="btn-sec !px-3 !py-1.5 text-sm">Sair</button>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="mx-auto grid max-w-5xl gap-6 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+
+    <div class="space-y-6">
+      <!-- Minha conta -->
+      <section aria-labelledby="t-conta" class="rounded-xl border border-line bg-white p-6">
+        <!-- API BACKEND: dados do perfil do usuário
+             GET /usuario/{id} ou /conta
+             resposta esperada: {
+               "nome": "Maria Joaquina Dantas Souza",
+               "saldo": 99.99,
+               "avatarInicial": "M"
+             }
+             O frontend deve renderizar esses valores nos elementos com ids nome-usuario, saldo e avatar.
+        -->
+        <h2 id="t-conta" class="mb-4 font-semibold">Minha conta</h2>
+        <div class="flex items-center gap-5">
+
+          <div id="avatar" class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-brand text-3xl font-bold text-white" aria-hidden="true">M</div>
+          
+          <div class="flex min-w-0 flex-1 flex-col justify-between self-stretch sm:flex-row sm:items-end">
+            <p id="nome-usuario" class="truncate text-xl font-semibold">Maria Joaquina Dantas Souza</p> <!-- Aqui Vai ser um Fetch do nome do usuário -->
+           
+            <div class="sm:text-right">
+              <p class="text-sm text-mute">Saldo</p>
+              <p id="saldo" class="text-3xl font-bold tabular-nums text-entrada">R$ 99,99</p>
+          
+            </div>
+         
+          </div>
+       
+        </div>
+      </section>
+
+      <!-- Ações (links HATEOAS controlam a exibição/ativação destes botões) -->
+      <section aria-labelledby="t-acoes" class="rounded-xl border border-line bg-white p-6">
+        <h2 id="t-acoes" class="mb-4 font-semibold">Ações</h2>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <button id="btn-depositar" type="button" data-open="dlg-depositar" class="btn py-4 text-lg">Depositar</button>
+          <button id="btn-transferir" type="button" data-open="dlg-transferir" class="btn-sec py-4 text-lg">Transferir</button>
+        </div>
+      </section>
+
+      <!-- Lista de endereços -->
+      <section aria-labelledby="t-enderecos" class="rounded-xl border border-line bg-white p-6">
+        <!-- API BACKEND: endereços salvos do usuário
+             GET /enderecos
+             resposta esperada: [
+               { "nome": "Maria Joaquina Dantas Souza", "endereco": "MARIAJOAQUINA9954" },
+               { "nome": "Maria Joaquina", "endereco": "MARIAJOAQUINA1234" }
+             ]
+             Quando o usuário clicar em um item, o frontend deve preencher o campo destinatário da transferência.
+        -->
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <h2 id="t-enderecos" class="font-semibold">Lista de endereços</h2>
+          <button id="btn-add-endereco" type="button" data-open="dlg-endereco" class="btn-sec !px-3 !py-1.5 text-sm">+ Adicionar endereço</button>
+        </div>
+        <ul id="lista-enderecos" class="grid gap-3 sm:grid-cols-2">
+          <li>
+            <button type="button" data-endereco="MARIAJOAQUINA9954" class="w-full rounded-lg border border-line bg-white px-4 py-3 text-left hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
+              <span class="block text-xs text-mute">Nome de usuário</span>
+              <span class="block truncate text-sm font-semibold">Maria Joaquina Dantas Souza</span>
+              <span class="mt-1.5 block text-xs text-mute">Endereço</span>
+              <span class="block truncate text-sm">MARIAJOAQUINA9954</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" data-endereco="MARIAJOAQUINA9954" class="w-full rounded-lg border border-line bg-white px-4 py-3 text-left hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
+              <span class="block text-xs text-mute">Nome de usuário</span>
+              <span class="block truncate text-sm font-semibold">Maria Joaquina Dantas Souza</span>
+              <span class="mt-1.5 block text-xs text-mute">Endereço</span>
+              <span class="block truncate text-sm">MARIAJOAQUINA9954</span>
+            </button>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- Últimas transações -->
+    <section aria-labelledby="t-extrato" class="h-fit rounded-xl border border-line bg-white p-6">
+      <!-- API BACKEND: extrato/transações
+           GET /transacoes?limit=5
+           resposta esperada: [
+             {
+               "tipo": "saida" | "entrada",
+               "valor": 85.00,
+               "descricao": "Maria Joaquina Dantas Souza",
+               "data": "2026-10-07T14:32:00",
+               "sentido": "enviado" | "recebido" | "depositado"
+             }
+           ]
+           O frontend deve converter valor para moeda e decidir a cor/icone conforme tipo.
+      -->
+      <h2 id="t-extrato" class="mb-4 font-semibold">Últimas transações</h2>
+      <ul id="lista-transacoes" class="space-y-2">
+          <li class="flex items-center gap-3 rounded-lg px-4 py-3 bg-saida/10 text-saida">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold">Maria Joaquina Dantas Souza</p>
+              <p class="text-xs opacity-80">Enviado em 07/10/2026, 14:32</p>
+            </div>
+            <p class="text-base font-bold tabular-nums">− R$ 85,00</p>
+          </li>
+          <li class="flex items-center gap-3 rounded-lg px-4 py-3 bg-entrada/10 text-entrada">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold">Maria Joaquina Dantas Souza</p>
+              <p class="text-xs opacity-80">Recebido em 07/10/2026, 11:05</p>
+            </div>
+            <p class="text-base font-bold tabular-nums">+ R$ 85,00</p>
+          </li>
+          <li class="flex items-center gap-3 rounded-lg px-4 py-3 bg-entrada/10 text-entrada">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold">Depósito</p>
+              <p class="text-xs opacity-80">Depositado em 06/10/2026, 18:20</p>
+            </div>
+            <p class="text-base font-bold tabular-nums">+ R$ 200,00</p>
+          </li>
+          <li class="flex items-center gap-3 rounded-lg px-4 py-3 bg-saida/10 text-saida">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold">Maria Joaquina Dantas Souza</p>
+              <p class="text-xs opacity-80">Enviado em 05/10/2026, 09:47</p>
+            </div>
+            <p class="text-base font-bold tabular-nums">− R$ 85,00</p>
+          </li>
+      </ul>
+      <button id="btn-ver-mais" type="button" class="btn-sec mt-4 w-full text-sm">Ver mais</button>
+    </section>
+  </main>
+
+  <!-- Pop-up: Depositar -->
+  <dialog id="dlg-depositar" class="m-auto w-[min(92vw,26rem)] rounded-xl border border-line p-6 backdrop:bg-ink/40">
+    <form id="form-depositar" class="space-y-5" novalidate>
+      <!-- API BACKEND: depósito
+           payload esperado: { "valor": 100.00 }
+           endpoint sugerido: POST /depositos
+      -->
+      <div class="flex items-start justify-between">
+        <h2 class="text-lg font-semibold">Depositar</h2>
+        <button type="button" data-close class="rounded p-1 text-mute hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand" aria-label="Fechar">✕</button>
+      </div>
+      <p id="erro-depositar" role="alert" class="erro hidden"></p>
+      <div>
+        <label for="dep-valor" class="rotulo">Valor para depósito</label>
+        <input id="dep-valor" name="valor" type="text" inputmode="decimal" placeholder="0,00" required class="campo">
+      </div>
+      <button type="submit" class="btn w-full">Concluir depósito</button>
+    </form>
+  </dialog>
+
+  <!-- Pop-up: Transferir -->
+  <dialog id="dlg-transferir" class="m-auto w-[min(92vw,26rem)] rounded-xl border border-line p-6 backdrop:bg-ink/40">
+    <form id="form-transferir" class="space-y-5" novalidate>
+      <!-- API BACKEND: transferência
+           payload esperado: {
+             "destinatario": "MARIAJOAQUINA9954",
+             "valor": 85.00
+           }
+           endpoint sugerido: POST /transferencias
+      -->
+      <div class="flex items-start justify-between">
+        <div>
+          <h2 class="text-lg font-semibold">Transferir</h2>
+          <p class="text-sm text-mute">Saldo disponível: <span id="saldo-modal" class="font-semibold tabular-nums">R$ 99,99</span></p>
+        </div>
+        <button type="button" data-close class="rounded p-1 text-mute hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand" aria-label="Fechar">✕</button>
+      </div>
+      <p id="erro-transferir" role="alert" class="erro hidden"></p>
+      <div>
+        <label for="tr-dest" class="rotulo">Destinatário</label>
+        <input id="tr-dest" name="destinatario" type="text" required class="campo">
+      </div>
+      <div>
+        <label for="tr-valor" class="rotulo">Valor</label>
+        <input id="tr-valor" name="valor" type="text" inputmode="decimal" placeholder="0,00" required class="campo">
+      </div>
+      <button type="submit" class="btn w-full">Concluir transferência</button>
+    </form>
+  </dialog>
+
+  <!-- Pop-up: Adicionar endereço (não está no Figma) -->
+  <dialog id="dlg-endereco" class="m-auto w-[min(92vw,26rem)] rounded-xl border border-line p-6 backdrop:bg-ink/40">
+    <form id="form-endereco" class="space-y-5" novalidate>
+      <!-- API BACKEND: cadastro de endereço favorito
+           payload esperado: {
+             "nome": "Maria Joaquina Dantas Souza",
+             "endereco": "MARIAJOAQUINA9954"
+           }
+           endpoint sugerido: POST /enderecos
+      -->
+      <div class="flex items-start justify-between">
+        <h2 class="text-lg font-semibold">Adicionar endereço</h2>
+        <button type="button" data-close class="rounded p-1 text-mute hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand" aria-label="Fechar">✕</button>
+      </div>
+      <p id="erro-endereco" role="alert" class="erro hidden"></p>
+      <div>
+        <label for="end-nome" class="rotulo">Nome de usuário</label>
+        <input id="end-nome" name="nome" type="text" required class="campo">
+      </div>
+      <div>
+        <label for="end-endereco" class="rotulo">Endereço</label>
+        <input id="end-endereco" name="endereco" type="text" required class="campo">
+      </div>
+      <button type="submit" class="btn w-full">Salvar endereço</button>
+    </form>
+  </dialog>
+
+  <script src="js/api.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>

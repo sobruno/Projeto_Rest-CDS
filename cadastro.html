@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<title>Criar conta | CDS</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { sans: ["Figtree", "system-ui", "sans-serif"] },
+    colors: { ink: "#16201d", mute: "#5d6b66", line: "#dfe3df", paper: "#f4f5f2",
+      brand: { DEFAULT: "#0f5c4a", dark: "#0a4436" }, entrada: "#137a4b", saida: "#b3261e" }
+  } } }
+</script>
+<style type="text/tailwindcss">
+  @layer components {
+    .campo { @apply w-full rounded-md border border-line bg-white px-3 py-2.5 text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/25; }
+    .rotulo { @apply mb-1.5 block text-sm font-medium text-ink; }
+    .btn { @apply rounded-md bg-brand px-5 py-2.5 font-semibold text-white hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand; }
+    .btn-sec { @apply rounded-md border border-line bg-white px-5 py-2.5 font-semibold text-ink hover:bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand; }
+    .erro { @apply rounded-md bg-saida/10 px-3 py-2 text-sm text-saida; }
+  }
+</style>
+</head>
+<body class="flex min-h-screen items-center justify-center bg-paper px-4 py-10 font-sans text-ink">
+  <main class="w-full max-w-sm">
+    <div class="mb-6 text-center">
+      <h1 class="text-5xl font-bold tracking-tight">CDS</h1>
+      <p class="text-mute">Carteira Digital Simplificada</p>
+    </div>
+
+    <form id="form-cadastro" class="space-y-5 rounded-xl border border-line bg-white p-8 shadow-sm" novalidate>
+      <!-- API BACKEND: payload esperado no cadastro
+           {
+             "username": "nome do usuário",
+             "endereco": "identificador único do endereço/conta",
+             "endereco_confirm": "mesmo valor para validação",
+             "senha": "senha em texto puro no front; o backend deve fazer hash",
+             "senha_confirm": "mesmo valor para validação"
+           }
+           O backend deve validar: username único, endereço igual em ambos campos, senha igual em ambos campos.
+      -->
+      <p id="erro-cadastro" role="alert" class="erro hidden"></p>
+      <div>
+        <label for="username" class="rotulo">Nome de usuário</label>
+        <input id="username" name="username" type="text" autocomplete="username" required class="campo">
+      </div>
+      <div>
+        <label for="endereco" class="rotulo">Endereço</label>
+        <input id="endereco" name="endereco" type="text" required class="campo">
+      </div>
+      <div>
+        <label for="endereco_confirm" class="rotulo">Confirmar endereço</label>
+        <input id="endereco_confirm" name="endereco_confirm" type="text" required class="campo">
+      </div>
+      <div>
+        <label for="senha" class="rotulo">Senha</label>
+        <input id="senha" name="senha" type="password" autocomplete="new-password" required class="campo">
+      </div>
+      <div>
+        <label for="senha_confirm" class="rotulo">Confirmar senha</label>
+        <input id="senha_confirm" name="senha_confirm" type="password" autocomplete="new-password" required class="campo">
+      </div>
+      <button type="submit" class="btn w-full">Cadastrar</button>
+      <p class="pt-2 text-center text-sm text-mute">
+        Já tem uma conta?
+        <a href="login.html" class="font-semibold text-brand underline underline-offset-2">Entrar</a>
+      </p>
+    </form>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/cadastro.js"></script>
+</body>
+</html>
