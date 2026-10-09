@@ -19,12 +19,11 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String gerarToken(Long userId, String nome, String email) {
+    public String gerarToken(Long userId, String nome) {
         long now = System.currentTimeMillis();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("nome", nome)
-                .claim("email", email)
                 .issuedAt(new Date(now))
                 .expiration(new Date(now + 1000L * 60 * 60 * 24))
                 .signWith(key)

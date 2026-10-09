@@ -28,14 +28,13 @@ public class AuthController {
         try {
             // 1. Validação de campos obrigatórios
             if (body.getNome() == null || body.getNome().isBlank() ||
-                body.getEmail() == null || body.getEmail().isBlank() ||
                 body.getSenha() == null || body.getSenha().isBlank()) {
                 return ResponseEntity.badRequest().body(Map.of("erro", "Preencha todos os campos obrigatórios"));
             }
 
             // 2. Verifica se o e-mail já existe
-            if (usuarioRepository.findByEmail(body.getEmail()).isPresent()) {
-                return ResponseEntity.badRequest().body(Map.of("erro", "Email já cadastrado"));
+            if (usuarioRepository.findByNome(body.getNome()).isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("erro", "Nome já cadastrado"));
             }
 
             // 3. Criptografa a senha e salva
@@ -54,14 +53,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         try {
-            String email = body.get("email");
+            String nome = body.get("nome");
             String senha = body.get("senha");
 
-            if (email == null || email.isBlank() || senha == null || senha.isBlank()) {
-                return ResponseEntity.badRequest().body(Map.of("erro", "E-mail e senha são obrigatórios"));
+            if (nome == null || nome.isBlank() || senha == null || senha.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("erro", "nome e senha são obrigatórios"));
             }
 
-            var opt = usuarioRepository.findByEmail(email);
+            var opt = usuarioRepository.findByNome(nome);
             if (opt.isEmpty()) {
                 return ResponseEntity.status(401).body(Map.of("erro", "Credenciais inválidas"));
             }
@@ -71,7 +70,7 @@ public class AuthController {
                 return ResponseEntity.status(401).body(Map.of("erro", "Credenciais inválidas"));
             }
 
-            String token = jwtUtil.gerarToken(u.getId(), u.getNome(), u.getEmail());
+            String token = jwtUtil.gerarToken(u.getId(), u.getNome());
 
             return ResponseEntity.ok(Map.of(
                     "token", token,

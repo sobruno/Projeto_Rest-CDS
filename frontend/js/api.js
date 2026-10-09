@@ -105,7 +105,7 @@
 
     login(payload) {
       const body = {
-        email: payload.email || payload.username,
+        nome: payload.nome || payload.username,
         senha: payload.senha || payload.password,
       };
 
@@ -127,7 +127,7 @@
     registerUser(payload) {
       const body = {
         nome: payload.nome || payload.username,
-        email: payload.email || payload.endereco,
+        endereco: payload.endereco || payload.address,
         senha: payload.senha,
       };
 
