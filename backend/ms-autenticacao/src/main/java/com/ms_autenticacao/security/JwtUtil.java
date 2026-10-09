@@ -19,14 +19,21 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String gerarToken(Long userId, String nome) {
+    public String gerarToken(Long userId, String nome, String endereco) {
         long now = System.currentTimeMillis();
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(String.valueOf(userId))
-                .claim("nome", nome)
-                .issuedAt(new Date(now))
+                .claim("nome", nome);
+        if (endereco != null && !endereco.isBlank()) {
+            builder.claim("endereco", endereco);
+        }
+        return builder.issuedAt(new Date(now))
                 .expiration(new Date(now + 1000L * 60 * 60 * 24))
                 .signWith(key)
                 .compact();
+    }
+
+    public String gerarToken(Long userId, String nome) {
+        return gerarToken(userId, nome, null);
     }
 }

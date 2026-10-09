@@ -6,4 +6,6 @@ import java.util.Optional;
 
 public interface ContaRepository extends JpaRepository<Conta, Long> {
     Optional<Conta> findByUsuarioId(Long usuarioId);
+    Optional<Conta> findByChaveIgnoreCase(String chave);
+    Optional<Conta> findByTitularIgnoreCase(String titular);
 }

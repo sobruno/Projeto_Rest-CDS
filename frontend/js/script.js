@@ -247,10 +247,9 @@
           return;
         }
 
-        try {
-          // ALINHADO COM O ContaController.java (passa contaDestinoId)
+          // Envia destinatário (chave/endereço ou ID) e valor
           await window.CDSApi.transfer({
-            contaDestinoId: Number(destinatario),
+            destinatario,
             valor,
           });
           document.getElementById("dlg-transferir").close();

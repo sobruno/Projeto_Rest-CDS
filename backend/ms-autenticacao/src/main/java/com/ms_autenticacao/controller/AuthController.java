@@ -70,7 +70,7 @@ public class AuthController {
                 return ResponseEntity.status(401).body(Map.of("erro", "Credenciais inválidas"));
             }
 
-            String token = jwtUtil.gerarToken(u.getId(), u.getNome());
+            String token = jwtUtil.gerarToken(u.getId(), u.getNome(), u.getEndereco());
 
             return ResponseEntity.ok(Map.of(
                     "token", token,

@@ -51,14 +51,23 @@ public class JwtFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             if (jwtUtil.validarToken(token)) {
-                String userId = jwtUtil.extrairUsuarioId(token);
+                var claims = jwtUtil.parseClaims(token);
+                String userId = claims.getSubject();
+                String userNome = claims.get("nome") != null ? claims.get("nome").toString() : null;
+                String userChave = claims.get("endereco") != null ? claims.get("endereco").toString() : null;
 
-                // Empacota o request injetando o cabeçalho X-User-Id
+                // Empacota o request injetando os cabeçalhos do usuário
                 HttpServletRequestWrapper wrappedRequest = new HttpServletRequestWrapper(request) {
                     @Override
                     public String getHeader(String name) {
                         if ("X-User-Id".equalsIgnoreCase(name)) {
                             return userId;
+                        }
+                        if ("X-User-Nome".equalsIgnoreCase(name) && userNome != null) {
+                            return userNome;
+                        }
+                        if ("X-User-Chave".equalsIgnoreCase(name) && userChave != null) {
+                            return userChave;
                         }
                         return super.getHeader(name);
                     }
@@ -68,15 +77,21 @@ public class JwtFilter extends OncePerRequestFilter {
                         if ("X-User-Id".equalsIgnoreCase(name)) {
                             return Collections.enumeration(List.of(userId));
                         }
+                        if ("X-User-Nome".equalsIgnoreCase(name) && userNome != null) {
+                            return Collections.enumeration(List.of(userNome));
+                        }
+                        if ("X-User-Chave".equalsIgnoreCase(name) && userChave != null) {
+                            return Collections.enumeration(List.of(userChave));
+                        }
                         return super.getHeaders(name);
                     }
 
                     @Override
                     public Enumeration<String> getHeaderNames() {
                         List<String> names = Collections.list(super.getHeaderNames());
-                        if (!names.contains("X-User-Id")) {
-                            names.add("X-User-Id");
-                        }
+                        if (!names.contains("X-User-Id")) names.add("X-User-Id");
+                        if (userNome != null && !names.contains("X-User-Nome")) names.add("X-User-Nome");
+                        if (userChave != null && !names.contains("X-User-Chave")) names.add("X-User-Chave");
                         return Collections.enumeration(names);
                     }
                 };

@@ -17,7 +17,7 @@ public class WebConfig {
         CorsConfiguration config = new CorsConfiguration();
         
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:3000"); // Origem exata do Nginx/front-end
+        config.addAllowedOriginPattern("*");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         
