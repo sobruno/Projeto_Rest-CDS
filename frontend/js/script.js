@@ -2,32 +2,7 @@
   "use strict";
 
   /*
-   * =========================================
    * DASHBOARD / CARTEIRA
-   * =========================================
-   *
-   * Função: carregar dados da conta, endereços e transações do backend.
-   *
-   * O backend deve expor dados no formato esperado abaixo:
-   * GET /api/usuarios/me
-   *   -> { nome: "Maria Joaquina", saldo: 99.99 }
-   *
-   * GET /api/enderecos
-   *   -> [
-   *        { nome: "Maria Joaquina Dantas Souza", endereco: "MARIAJOAQUINA9954" }
-   *      ]
-   *
-   * GET /api/transacoes?limit=5
-   *   -> [
-   *        {
-   *          tipo: "saida",
-   *          valor: 85.00,
-   *          descricao: "Maria Joaquina Dantas Souza",
-   *          data: "2026-10-07T14:32:00"
-   *        }
-   *      ]
-   *
-   * Se o seu amigo usar outros nomes, edite em js/api.js.
    */
 
   const pageBody = document.body;
@@ -78,8 +53,11 @@
     const saldoModal = document.getElementById("saldo-modal");
     const avatar = document.getElementById("avatar");
 
+    // ALINHADO COM O ContaDto.java (procura titular ou nome)
+    const nomeExibicao = profile?.titular || profile?.nome || "Usuário";
+
     if (nomeUsuario) {
-      nomeUsuario.textContent = profile?.nome || "Usuário";
+      nomeUsuario.textContent = nomeExibicao;
     }
 
     if (saldo) {
@@ -91,7 +69,7 @@
     }
 
     if (avatar) {
-      avatar.textContent = getInitials(profile?.nome || "Usuário");
+      avatar.textContent = getInitials(nomeExibicao);
     }
   }
 
@@ -102,7 +80,8 @@
     }
 
     if (!addresses || addresses.length === 0) {
-      list.innerHTML = '<li class="rounded-lg border border-dashed border-line p-3 text-sm text-mute">Nenhum endereço salvo.</li>';
+      list.innerHTML =
+        '<li class="rounded-lg border border-dashed border-line p-3 text-sm text-mute">Nenhum endereço salvo.</li>';
       return;
     }
 
@@ -115,7 +94,7 @@
             <button type="button" data-endereco="${endereco}" class="w-full rounded-lg border border-line bg-white px-4 py-3 text-left hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
               <span class="block text-xs text-mute">Nome de usuário</span>
               <span class="block truncate text-sm font-semibold">${nome}</span>
-              <span class="mt-1.5 block text-xs text-mute">Endereço</span>
+              <span class="mt-1.5 block text-xs text-mute">Endereço / Conta ID</span>
               <span class="block truncate text-sm">${endereco}</span>
             </button>
           </li>
@@ -138,26 +117,44 @@
     });
   }
 
-  function renderTransactions(transactions) {
+  function renderTransactions(transactions, myContaId) {
     const list = document.getElementById("lista-transacoes");
     if (!list) {
       return;
     }
 
     if (!transactions || transactions.length === 0) {
-      list.innerHTML = '<li class="rounded-lg border border-dashed border-line p-3 text-sm text-mute">Nenhuma transação registrada.</li>';
+      list.innerHTML =
+        '<li class="rounded-lg border border-dashed border-line p-3 text-sm text-mute">Nenhuma transação registrada.</li>';
       return;
     }
 
     list.innerHTML = transactions
       .map((item) => {
-        const tipo = (item.tipo || "entrada").toLowerCase();
-        const valor = Number(item.valor || 0);
-        const positivo = tipo === "entrada";
+        // ALINHADO COM O Transacao.java (trata dataHora, DEPOSITO e TRANSFERENCIA)
+        const isDeposito = item.tipo === "DEPOSITO";
+        const isEntrada =
+          isDeposito ||
+          (item.contaDestinoId &&
+            String(item.contaDestinoId) === String(myContaId));
+        const positivo = isEntrada;
         const sinal = positivo ? "+" : "−";
-        const descricao = item.descricao || "Transação";
-        const dataTexto = item.data ? formatDate(item.data) : "Data indisponível";
-        const textoSentido = item.sentido || (positivo ? "Recebido" : "Enviado");
+
+        let descricao = "Transação";
+        if (isDeposito) {
+          descricao = "Depósito Realizado";
+        } else if (positivo) {
+          descricao = `Transferência Recebida (Conta #${item.contaOrigemId})`;
+        } else {
+          descricao = `Transferência Enviada (Conta #${item.contaDestinoId})`;
+        }
+
+        const dataOriginal = item.dataHora || item.data;
+        const dataTexto = dataOriginal
+          ? formatDate(dataOriginal)
+          : "Data indisponível";
+        const textoSentido = positivo ? "Recebido" : "Enviado";
+        const valor = Number(item.valor || 0);
 
         return `
           <li class="flex items-center gap-3 rounded-lg px-4 py-3 ${positivo ? "bg-entrada/10 text-entrada" : "bg-saida/10 text-saida"}">
@@ -236,10 +233,12 @@
         event.preventDefault();
 
         const destinatario = document.getElementById("tr-dest").value.trim();
-        const valor = Number((document.getElementById("tr-valor").value || "").replace(",", "."));
+        const valor = Number(
+          (document.getElementById("tr-valor").value || "").replace(",", "."),
+        );
 
         if (!destinatario) {
-          alert("Informe o destinatário da transferência.");
+          alert("Informe a conta de destino.");
           return;
         }
 
@@ -249,7 +248,11 @@
         }
 
         try {
-          await window.CDSApi.transfer({ destinatario, valor });
+          // ALINHADO COM O ContaController.java (passa contaDestinoId)
+          await window.CDSApi.transfer({
+            contaDestinoId: Number(destinatario),
+            valor,
+          });
           document.getElementById("dlg-transferir").close();
           transferForm.reset();
           await loadDashboard();
@@ -284,18 +287,6 @@
         }
       });
     }
-
-    document.querySelectorAll("form").forEach((form) => {
-      form.addEventListener("submit", function (event) {
-        // Este bloco evita recarregar a página enquanto o JS do backend não entra em produção.
-        // O backend real deve substituir essa lógica pelos endpoints reais.
-        if (form.id === "form-depositar" || form.id === "form-transferir" || form.id === "form-endereco") {
-          return;
-        }
-
-        event.preventDefault();
-      });
-    });
   }
 
   async function loadDashboard() {
@@ -306,25 +297,15 @@
     try {
       const [profile, addresses, transactions] = await Promise.all([
         window.CDSApi.getProfile(),
-        window.CDSApi.getAddresses(),
-        window.CDSApi.getTransactions(5),
+        window.CDSApi.getAddresses().catch(() => []),
+        window.CDSApi.getTransactions(5).catch(() => []),
       ]);
 
-      renderProfile(profile || { nome: "Usuário", saldo: 0 });
+      renderProfile(profile || { titular: "Usuário", saldo: 0 });
       renderAddresses(addresses || []);
-      renderTransactions(transactions || []);
+      renderTransactions(transactions || [], profile?.id);
     } catch (error) {
-      console.warn("Backend ainda não disponível ou sem dados reais:", error.message);
-      renderProfile({ nome: "Usuário", saldo: 99.99 });
-      renderAddresses([
-        { nome: "Maria Joaquina Dantas Souza", endereco: "MARIAJOAQUINA9954" },
-        { nome: "Maria Joaquina Dantas Souza", endereco: "MARIAJOAQUINA9954" },
-      ]);
-      renderTransactions([
-        { tipo: "saida", valor: 85.0, descricao: "Maria Joaquina Dantas Souza", data: "2026-10-07T14:32:00", sentido: "Enviado" },
-        { tipo: "entrada", valor: 85.0, descricao: "Maria Joaquina Dantas Souza", data: "2026-10-07T11:05:00", sentido: "Recebido" },
-        { tipo: "entrada", valor: 200.0, descricao: "Depósito", data: "2026-10-06T18:20:00", sentido: "Depositado" },
-      ]);
+      console.warn("Backend indisponível ou token expirado:", error.message);
     }
   }
 

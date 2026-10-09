@@ -2,36 +2,17 @@
   "use strict";
 
   /*
-   * =========================================
-   * CAMADA DE INTEGRAÇÃO COM O BACKEND
-   * =========================================
-   *
-   * Editar aqui somente quando o amigo do Spring Boot estiver pronto:
-   * 1) API_BASE_URL
-   * 2) os endpoints abaixo, se ele usar nomes diferentes
-   * 3) o formato da resposta JWT/token, caso venha em outra chave
-   *
-   * Convenção usada neste projeto:
-   * - base: http://localhost:8080/api
-   * - autenticação via Bearer token no header Authorization
-   * - respostas em JSON
-   *
-   * Exemplo real de backend em Spring Boot:
-   * POST /api/auth/login
-   * POST /api/usuarios
-   * GET  /api/usuarios/me
-   * GET  /api/enderecos
-   * POST /api/enderecos
-   * GET  /api/transacoes?limit=5
-   * POST /api/depositos
-   * POST /api/transferencias
+   * CAMADA DE INTEGRAÇÃO COM O BACKEND SPRING BOOT (API GATEWAY)
+   * Base URL do Gateway: http://localhost:8080/api
    */
 
   const API_BASE_URL = "http://localhost:8080/api";
   const DEFAULT_HEADERS = { "Content-Type": "application/json" };
 
   function getAuthToken() {
-    return localStorage.getItem("cds_token") || sessionStorage.getItem("cds_token");
+    return (
+      localStorage.getItem("cds_token") || sessionStorage.getItem("cds_token")
+    );
   }
 
   function setAuthToken(token) {
@@ -39,7 +20,6 @@
       clearAuthToken();
       return;
     }
-
     localStorage.setItem("cds_token", token);
   }
 
@@ -81,17 +61,30 @@
       ...options,
     };
 
-    if (method !== "GET" && method !== "HEAD" && requestConfig.body !== undefined && typeof requestConfig.body !== "string") {
+    if (
+      method !== "GET" &&
+      method !== "HEAD" &&
+      requestConfig.body !== undefined &&
+      typeof requestConfig.body !== "string"
+    ) {
       requestConfig.body = JSON.stringify(requestConfig.body);
     }
 
-    const response = await fetch(`${API_BASE_URL}${finalEndpoint}`, requestConfig);
+    const response = await fetch(
+      `${API_BASE_URL}${finalEndpoint}`,
+      requestConfig,
+    );
     const responseText = await response.text();
     const payload = normalizeResponse(responseText);
 
     if (!response.ok) {
       const message =
-        (payload && (payload.message || payload.error || payload.msg || payload.details)) ||
+        (payload &&
+          (payload.erro ||
+            payload.error ||
+            payload.message ||
+            payload.msg ||
+            payload.details)) ||
         "Erro ao comunicar com o backend.";
 
       throw new Error(message);
@@ -101,11 +94,6 @@
   }
 
   const api = {
-    /*
-     * Login e autenticação.
-     * Se o backend retornar a chave "token", "accessToken" ou "jwt",
-     * o método abaixo já salva no localStorage.
-     */
     setToken(token) {
       setAuthToken(token);
       return token;
@@ -116,12 +104,17 @@
     },
 
     login(payload) {
-      // EDITAR AQUI: endpoint de autenticação, se o seu amigo usar outro nome.
+      const body = {
+        email: payload.email || payload.username,
+        senha: payload.senha || payload.password,
+      };
+
       return request("/auth/login", {
         method: "POST",
-        body: payload,
+        body,
       }).then((data) => {
-        const token = data?.token || data?.accessToken || data?.jwt || data?.data?.token;
+        const token =
+          data?.token || data?.accessToken || data?.jwt || data?.data?.token;
 
         if (token) {
           setAuthToken(token);
@@ -132,50 +125,58 @@
     },
 
     registerUser(payload) {
-      // EDITAR AQUI: se o endpoint for /auth/register ou /usuarios/create.
-      return request("/usuarios", {
+      const body = {
+        nome: payload.nome || payload.username,
+        email: payload.email || payload.endereco,
+        senha: payload.senha,
+      };
+
+      return request("/auth/cadastrar", {
         method: "POST",
-        body: payload,
+        body,
       });
     },
 
+    // ALINHADO COM O ContaController.java (/contas/minha-conta)
     getProfile() {
-      // EDITAR AQUI: endpoint do perfil do usuário autenticado.
-      return request("/usuarios/me");
+      return request("/contas/minha-conta");
     },
 
     getAddresses() {
-      // EDITAR AQUI: endpoint para listar endereços salvos.
       return request("/enderecos");
     },
 
     addAddress(payload) {
-      // EDITAR AQUI: endpoint para criar endereço favorito.
       return request("/enderecos", {
         method: "POST",
         body: payload,
       });
     },
 
-    getTransactions(limit = 5) {
-      // EDITAR AQUI: endpoint do extrato.
-      return request(`/transacoes?limit=${limit}`);
-    },
-
+    // ALINHADO COM O ContaController.java (/contas/depositar)
     deposit(valor) {
-      // EDITAR AQUI: endpoint para depósito.
-      return request("/depositos", {
+      return request("/contas/depositar", {
         method: "POST",
         body: { valor },
       });
     },
 
+    // ALINHADO COM O ContaController.java (/contas/transferir)
     transfer(payload) {
-      // EDITAR AQUI: endpoint para transferência.
-      return request("/transferencias", {
+      return request("/contas/transferir", {
         method: "POST",
         body: payload,
       });
+    },
+
+    // Busca o extrato utilizando a conta do próprio usuário logado
+    async getTransactions(limit = 5) {
+      const conta = await this.getProfile();
+      const contaId = conta.id || (conta.content && conta.content.id);
+      if (!contaId) return [];
+
+      const extrato = await request(`/contas/${contaId}/extrato`);
+      return Array.isArray(extrato) ? extrato.slice(0, limit) : [];
     },
 
     logout() {
