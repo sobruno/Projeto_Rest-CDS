@@ -8,9 +8,7 @@
    *
    * Função: enviar username + password para o backend.
    * O backend deve validar o usuário e devolver um token JWT ou sessão.
-   *
-   * Se o seu amigo usar outro nome de endpoint, edite em js/api.js.
-   * Esta página só precisa enviar o payload certo e redirecionar.
+
    */
 
   const form = document.getElementById("form-login");
