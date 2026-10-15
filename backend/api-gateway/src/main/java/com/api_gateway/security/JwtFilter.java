@@ -24,23 +24,15 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 1. Injeta os cabeçalhos de CORS em TODAS as respostas (sucesso, preflight ou erro)
-        String origin = request.getHeader("Origin");
-        response.setHeader("Access-Control-Allow-Origin", origin != null ? origin : "*");
-        response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-        response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-User-Id, *");
-        response.setHeader("Access-Control-Allow-Credentials", "true");
-        response.setHeader("Access-Control-Max-Age", "3600");
-
-        // 2. Responde preflight (OPTIONS) imediatamente com status 200 OK
+        // 1. Responde ou delega preflight (OPTIONS)
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
-            response.setStatus(HttpServletResponse.SC_OK);
+            filterChain.doFilter(request, response);
             return;
         }
 
         String path = request.getRequestURI();
 
-        // 3. Libera rotas públicas de autenticação (/api/auth/**)
+        // 2. Libera rotas públicas de autenticação (/api/auth/**)
         if (path.startsWith("/api/auth")) {
             filterChain.doFilter(request, response);
             return;

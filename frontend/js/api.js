@@ -28,11 +28,11 @@
     sessionStorage.removeItem("cds_token");
   }
 
-  function buildHeaders(extraHeaders = {}) {
+  function buildHeaders(extraHeaders = {}, isPublic = false) {
     const headers = { ...DEFAULT_HEADERS, ...extraHeaders };
     const token = getAuthToken();
 
-    if (token) {
+    if (token && !isPublic) {
       headers.Authorization = `Bearer ${token}`;
     }
 
@@ -54,10 +54,11 @@
   async function request(endpoint, options = {}) {
     const finalEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
     const method = (options.method || "GET").toUpperCase();
+    const isPublic = finalEndpoint.startsWith("/auth");
 
     const requestConfig = {
       method,
-      headers: buildHeaders(options.headers || {}),
+      headers: buildHeaders(options.headers || {}, isPublic),
       ...options,
     };
 
@@ -70,22 +71,53 @@
       requestConfig.body = JSON.stringify(requestConfig.body);
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}${finalEndpoint}`,
-      requestConfig,
-    );
+    let response;
+    try {
+      response = await fetch(
+        `${API_BASE_URL}${finalEndpoint}`,
+        requestConfig,
+      );
+    } catch (fetchError) {
+      console.error("Falha ao conectar com o backend:", fetchError);
+      throw new Error(
+        "Não foi possível conectar ao servidor. Verifique se o backend está em execução.",
+      );
+    }
+
     const responseText = await response.text();
     const payload = normalizeResponse(responseText);
 
     if (!response.ok) {
-      const message =
-        (payload &&
-          (payload.erro ||
+      let message = "";
+      if (payload) {
+        if (typeof payload === "string" && payload.trim().length > 0) {
+          message = payload.trim();
+        } else if (typeof payload === "object") {
+          message =
+            payload.erro ||
             payload.error ||
             payload.message ||
             payload.msg ||
-            payload.details)) ||
-        "Erro ao comunicar com o backend.";
+            payload.details ||
+            "";
+        }
+      }
+
+      if (!message) {
+        if (response.status === 401) {
+          message = "Credenciais inválidas. Verifique seu nome de usuário e senha.";
+        } else if (response.status === 400) {
+          message = "Dados inválidos. Verifique os campos informados.";
+        } else if (response.status === 403) {
+          message = "Acesso não autorizado.";
+        } else if (response.status === 404) {
+          message = "Recurso não encontrado no servidor.";
+        } else if (response.status >= 500) {
+          message = "Erro interno no servidor. Tente novamente mais tarde.";
+        } else {
+          message = "Erro ao comunicar com o backend.";
+        }
+      }
 
       throw new Error(message);
     }
@@ -105,8 +137,8 @@
 
     login(payload) {
       const body = {
-        nome: payload.nome || payload.username,
-        senha: payload.senha || payload.password,
+        nome: (payload.nome || payload.username || "").trim(),
+        senha: payload.senha || payload.password || "",
       };
 
       return request("/auth/login", {
@@ -126,9 +158,9 @@
 
     registerUser(payload) {
       const body = {
-        nome: payload.nome || payload.username,
-        endereco: payload.endereco || payload.address,
-        senha: payload.senha,
+        nome: (payload.nome || payload.username || "").trim(),
+        endereco: (payload.endereco || payload.address || "").trim(),
+        senha: payload.senha || payload.password || "",
       };
 
       return request("/auth/cadastrar", {

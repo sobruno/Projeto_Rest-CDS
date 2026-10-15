@@ -27,18 +27,25 @@ public class AuthController {
     public ResponseEntity<?> cadastrar(@RequestBody Usuario body) {
         try {
             // 1. Validação de campos obrigatórios
-            if (body.getNome() == null || body.getNome().isBlank() ||
-                body.getSenha() == null || body.getSenha().isBlank()) {
+            String nome = body.getNome() != null ? body.getNome().trim() : null;
+            String endereco = body.getEndereco() != null ? body.getEndereco().trim() : null;
+            String senha = body.getSenha();
+
+            if (nome == null || nome.isBlank() ||
+                endereco == null || endereco.isBlank() ||
+                senha == null || senha.isBlank()) {
                 return ResponseEntity.badRequest().body(Map.of("erro", "Preencha todos os campos obrigatórios"));
             }
 
-            // 2. Verifica se o e-mail já existe
-            if (usuarioRepository.findByNome(body.getNome()).isPresent()) {
+            // 2. Verifica se o usuário já existe
+            if (usuarioRepository.findByNomeIgnoreCase(nome).isPresent()) {
                 return ResponseEntity.badRequest().body(Map.of("erro", "Nome já cadastrado"));
             }
 
             // 3. Criptografa a senha e salva
-            body.setSenha(passwordEncoder.encode(body.getSenha()));
+            body.setNome(nome);
+            body.setEndereco(endereco);
+            body.setSenha(passwordEncoder.encode(senha));
             Usuario saved = usuarioRepository.save(body);
 
             // Evita retornar o hash da senha no JSON de resposta por segurança
@@ -53,14 +60,15 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         try {
-            String nome = body.get("nome");
-            String senha = body.get("senha");
+            String nome = body.get("nome") != null ? body.get("nome").trim() : "";
+            String senha = body.get("senha") != null ? body.get("senha") : "";
 
-            if (nome == null || nome.isBlank() || senha == null || senha.isBlank()) {
-                return ResponseEntity.badRequest().body(Map.of("erro", "nome e senha são obrigatórios"));
+            if (nome.isBlank() || senha.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("erro", "Nome de usuário e senha são obrigatórios"));
             }
 
-            var opt = usuarioRepository.findByNome(nome);
+            var opt = usuarioRepository.findByNomeIgnoreCase(nome)
+                    .or(() -> usuarioRepository.findByEmailIgnoreCase(nome));
             if (opt.isEmpty()) {
                 return ResponseEntity.status(401).body(Map.of("erro", "Credenciais inválidas"));
             }

@@ -36,7 +36,7 @@
 
   function getInitials(name) {
     if (!name) {
-      return "U";
+      return "-";
     }
 
     const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -54,7 +54,7 @@
     const avatar = document.getElementById("avatar");
 
     // ALINHADO COM O ContaDto.java (procura titular ou nome)
-    const nomeExibicao = profile?.titular || profile?.nome || "Usuário";
+    const nomeExibicao = profile?.titular || profile?.nome || "";
 
     if (nomeUsuario) {
       nomeUsuario.textContent = nomeExibicao;
@@ -87,8 +87,8 @@
 
     list.innerHTML = addresses
       .map((item) => {
-        const nome = item.nome || "Usuário";
-        const endereco = item.endereco || item.address || "";
+        const nome = item.nome || item.titular || "";
+        const endereco = item.endereco || item.address || item.chave || "";
         return `
           <li>
             <button type="button" data-endereco="${endereco}" class="w-full rounded-lg border border-line bg-white px-4 py-3 text-left hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
@@ -247,6 +247,7 @@
           return;
         }
 
+        try {
           // Envia destinatário (chave/endereço ou ID) e valor
           await window.CDSApi.transfer({
             destinatario,
@@ -288,23 +289,48 @@
     }
   }
 
-  async function loadDashboard() {
+  function checkAuth() {
+    const token =
+      localStorage.getItem("cds_token") || sessionStorage.getItem("cds_token");
+    if (!token) {
+      window.location.href = "login.html";
+      return false;
+    }
+    return true;
+  }
+
+  async function loadDashboard(transactionLimit = 5) {
     if (!window.CDSApi) {
       return;
     }
 
+    if (!checkAuth()) {
+      return;
+    }
+
     try {
-      const [profile, addresses, transactions] = await Promise.all([
-        window.CDSApi.getProfile(),
+      const profile = await window.CDSApi.getProfile();
+      renderProfile(profile);
+
+      const [addresses, transactions] = await Promise.all([
         window.CDSApi.getAddresses().catch(() => []),
-        window.CDSApi.getTransactions(5).catch(() => []),
+        window.CDSApi.getTransactions(transactionLimit).catch(() => []),
       ]);
 
-      renderProfile(profile || { titular: "Usuário", saldo: 0 });
       renderAddresses(addresses || []);
       renderTransactions(transactions || [], profile?.id);
     } catch (error) {
       console.warn("Backend indisponível ou token expirado:", error.message);
+      if (
+        error.message &&
+        (error.message.includes("Token") ||
+          error.message.includes("401") ||
+          error.message.includes("autenticação") ||
+          error.message.includes("ausente"))
+      ) {
+        window.CDSApi.logout();
+        window.location.href = "login.html";
+      }
     }
   }
 
@@ -320,14 +346,33 @@
     });
   }
 
+  function bindVerMaisAction() {
+    const btnVerMais = document.getElementById("btn-ver-mais");
+    if (!btnVerMais) {
+      return;
+    }
+
+    let expanded = false;
+    btnVerMais.addEventListener("click", async function () {
+      expanded = !expanded;
+      btnVerMais.textContent = expanded ? "Ver menos" : "Ver mais";
+      await loadDashboard(expanded ? 20 : 5);
+    });
+  }
+
   function initDashboard() {
     if (!pageBody) {
+      return;
+    }
+
+    if (!checkAuth()) {
       return;
     }
 
     bindDialogActions();
     bindFormSubmitters();
     bindLogoutAction();
+    bindVerMaisAction();
     loadDashboard();
   }
 

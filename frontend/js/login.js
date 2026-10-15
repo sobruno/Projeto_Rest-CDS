@@ -19,6 +19,11 @@
     return;
   }
 
+  // Limpa sessão prévia residual ao entrar na tela de login
+  if (window.CDSApi && typeof window.CDSApi.clearToken === "function") {
+    window.CDSApi.clearToken();
+  }
+
   function showError(message) {
     const errorBox = document.getElementById("erro-login");
     if (!errorBox) {
@@ -60,19 +65,21 @@
     try {
       const data = await window.CDSApi.login({ username, password });
 
-      // O backend pode responder com token, accessToken, jwt ou objeto aninhado.
-      // Se o token não vier, a página continua, mas o fluxo de autenticação
-      // precisa ser ajustado no backend para devolver um token válido.
-      const token = data?.token || data?.accessToken || data?.jwt || data?.data?.token;
+      const token =
+        data?.token || data?.accessToken || data?.jwt || data?.data?.token;
 
       if (token) {
         window.CDSApi.setToken(token);
+        window.location.href = "index.html";
+      } else {
+        showError("Servidor não retornou um token de autenticação válido.");
       }
-
-      window.location.href = "index.html";
     } catch (error) {
       console.error("Erro no login:", error);
-      showError(error.message || "Não foi possível entrar. Verifique usuário e senha.");
+      showError(
+        error.message ||
+          "Não foi possível entrar. Verifique seu usuário e senha.",
+      );
     } finally {
       if (submitButton) {
         submitButton.disabled = false;

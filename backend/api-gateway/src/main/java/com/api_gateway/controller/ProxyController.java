@@ -10,16 +10,17 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
 @RestController
 public class ProxyController {
 
-    @Value("${MS_AUTENTICACAO_URL:${ms.autenticacao.url:http://ms-autenticacao:8081}}")
+    @Value("${MS_AUTENTICACAO_URL:${ms.autenticacao.url:http://localhost:8081}}")
     private String msAutenticacaoUrl;
 
-    @Value("${MS_FINANCEIRO_URL:${ms.financeiro.url:http://ms-financeiro:8082}}")
+    @Value("${MS_FINANCEIRO_URL:${ms.financeiro.url:http://localhost:8082}}")
     private String msFinanceiroUrl;
 
     @Autowired
@@ -27,10 +28,12 @@ public class ProxyController {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    // Cabeçalhos que NUNCA devem ser duplicados/repassados entre Gateway <-> Microsserviços
+    // Cabeçalhos que NUNCA devem ser repassados entre Gateway <-> Microsserviços / Cliente
     private static final List<String> IGNORED_HEADERS = List.of(
             "host", "content-length", "transfer-encoding", "connection",
-            "keep-alive", "te", "trailers", "upgrade", "proxy-authorization", "proxy-authenticate"
+            "keep-alive", "te", "trailers", "upgrade", "proxy-authorization", "proxy-authenticate",
+            "access-control-allow-origin", "access-control-allow-methods",
+            "access-control-allow-headers", "access-control-allow-credentials"
     );
 
     @RequestMapping(value = "/api/**", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.PATCH})
@@ -81,18 +84,32 @@ public class ProxyController {
 
         try {
             ResponseEntity<byte[]> response = restTemplate.exchange(URI.create(targetUrl), httpMethod, httpEntity, byte[].class);
-            return ResponseEntity.status(response.getStatusCode())
-                    .headers(filterResponseHeaders(response.getHeaders()))
-                    .body(response.getBody());
+            byte[] respBody = response.getBody();
+            HttpHeaders cleanHeaders = filterResponseHeaders(response.getHeaders());
+
+            var builder = ResponseEntity.status(response.getStatusCode()).headers(cleanHeaders);
+            if (respBody != null) {
+                builder.contentLength(respBody.length);
+                return builder.body(respBody);
+            }
+            return builder.build();
         } catch (HttpStatusCodeException e) {
-            return ResponseEntity.status(e.getStatusCode())
-                    .headers(filterResponseHeaders(e.getResponseHeaders()))
-                    .body(e.getResponseBodyAsByteArray());
+            byte[] errBody = e.getResponseBodyAsByteArray();
+            HttpHeaders cleanHeaders = filterResponseHeaders(e.getResponseHeaders());
+
+            var builder = ResponseEntity.status(e.getStatusCode()).headers(cleanHeaders);
+            if (errBody != null && errBody.length > 0) {
+                builder.contentLength(errBody.length);
+                return builder.body(errBody);
+            }
+            return builder.build();
         } catch (Exception e) {
             String msg = e.getMessage() == null ? e.toString() : e.getMessage();
+            byte[] errBytes = ("{\"erro\":\"Erro ao comunicar com o serviço de destino: " + msg + "\"}").getBytes(StandardCharsets.UTF_8);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(("{\"erro\":\"Erro ao comunicar com o serviço de destino: " + msg + "\"}").getBytes());
+                    .contentLength(errBytes.length)
+                    .body(errBytes);
         }
     }
 

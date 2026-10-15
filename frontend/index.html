@@ -39,9 +39,7 @@
       </div>
 
       <div class="w-20 text-right">
-        <a href="login.html">
         <button id="btn-sair" type="button" class="btn-sec !px-3 !py-1.5 text-sm">Sair</button>
-        </a>
       </div>
 
     </div>
@@ -64,14 +62,14 @@
         <h2 id="t-conta" class="mb-4 font-semibold">Minha conta</h2>
         <div class="flex items-center gap-5">
 
-          <div id="avatar" class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-brand text-3xl font-bold text-white" aria-hidden="true">M</div>
+          <div id="avatar" class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-brand text-3xl font-bold text-white" aria-hidden="true">-</div>
           
           <div class="flex min-w-0 flex-1 flex-col justify-between self-stretch sm:flex-row sm:items-end">
-            <p id="nome-usuario" class="truncate text-xl font-semibold">Maria Joaquina Dantas Souza</p> <!-- Aqui Vai ser um Fetch do nome do usuário -->
+            <p id="nome-usuario" class="truncate text-xl font-semibold">Carregando...</p>
            
             <div class="sm:text-right">
               <p class="text-sm text-mute">Saldo</p>
-              <p id="saldo" class="text-3xl font-bold tabular-nums text-entrada">R$ 99,99</p>
+              <p id="saldo" class="text-3xl font-bold tabular-nums text-entrada">R$ 0,00</p>
           
             </div>
          
@@ -92,88 +90,21 @@
 
       <!-- Lista de endereços -->
       <section aria-labelledby="t-enderecos" class="rounded-xl border border-line bg-white p-6">
-        <!-- API BACKEND: endereços salvos do usuário
-             GET /enderecos
-             resposta esperada: [
-               { "nome": "Maria Joaquina Dantas Souza", "endereco": "MARIAJOAQUINA9954" },
-               { "nome": "Maria Joaquina", "endereco": "MARIAJOAQUINA1234" }
-             ]
-             Quando o usuário clicar em um item, o frontend deve preencher o campo destinatário da transferência.
-        -->
         <div class="mb-4 flex items-center justify-between gap-3">
           <h2 id="t-enderecos" class="font-semibold">Lista de endereços</h2>
           <button id="btn-add-endereco" type="button" data-open="dlg-endereco" class="btn-sec !px-3 !py-1.5 text-sm">+ Adicionar endereço</button>
         </div>
         <ul id="lista-enderecos" class="grid gap-3 sm:grid-cols-2">
-          <li>
-            <button type="button" data-endereco="MARIAJOAQUINA9954" class="w-full rounded-lg border border-line bg-white px-4 py-3 text-left hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
-              <span class="block text-xs text-mute">Nome de usuário</span>
-              <span class="block truncate text-sm font-semibold">Maria Joaquina Dantas Souza</span>
-              <span class="mt-1.5 block text-xs text-mute">Endereço</span>
-              <span class="block truncate text-sm">MARIAJOAQUINA9954</span>
-            </button>
-          </li>
-          <li>
-            <button type="button" data-endereco="MARIAJOAQUINA9954" class="w-full rounded-lg border border-line bg-white px-4 py-3 text-left hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
-              <span class="block text-xs text-mute">Nome de usuário</span>
-              <span class="block truncate text-sm font-semibold">Maria Joaquina Dantas Souza</span>
-              <span class="mt-1.5 block text-xs text-mute">Endereço</span>
-              <span class="block truncate text-sm">MARIAJOAQUINA9954</span>
-            </button>
-          </li>
+          <li class="rounded-lg border border-dashed border-line p-3 text-sm text-mute">Carregando endereços...</li>
         </ul>
       </section>
     </div>
 
     <!-- Últimas transações -->
     <section aria-labelledby="t-extrato" class="h-fit rounded-xl border border-line bg-white p-6">
-      <!-- API BACKEND: extrato/transações
-           GET /transacoes?limit=5
-           resposta esperada: [
-             {
-               "tipo": "saida" | "entrada",
-               "valor": 85.00,
-               "descricao": "Maria Joaquina Dantas Souza",
-               "data": "2026-10-07T14:32:00",
-               "sentido": "enviado" | "recebido" | "depositado"
-             }
-           ]
-           O frontend deve converter valor para moeda e decidir a cor/icone conforme tipo.
-      -->
       <h2 id="t-extrato" class="mb-4 font-semibold">Últimas transações</h2>
       <ul id="lista-transacoes" class="space-y-2">
-          <li class="flex items-center gap-3 rounded-lg px-4 py-3 bg-saida/10 text-saida">
-            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-semibold">Maria Joaquina Dantas Souza</p>
-              <p class="text-xs opacity-80">Enviado em 07/10/2026, 14:32</p>
-            </div>
-            <p class="text-base font-bold tabular-nums">− R$ 85,00</p>
-          </li>
-          <li class="flex items-center gap-3 rounded-lg px-4 py-3 bg-entrada/10 text-entrada">
-            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-semibold">Maria Joaquina Dantas Souza</p>
-              <p class="text-xs opacity-80">Recebido em 07/10/2026, 11:05</p>
-            </div>
-            <p class="text-base font-bold tabular-nums">+ R$ 85,00</p>
-          </li>
-          <li class="flex items-center gap-3 rounded-lg px-4 py-3 bg-entrada/10 text-entrada">
-            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-semibold">Depósito</p>
-              <p class="text-xs opacity-80">Depositado em 06/10/2026, 18:20</p>
-            </div>
-            <p class="text-base font-bold tabular-nums">+ R$ 200,00</p>
-          </li>
-          <li class="flex items-center gap-3 rounded-lg px-4 py-3 bg-saida/10 text-saida">
-            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-semibold">Maria Joaquina Dantas Souza</p>
-              <p class="text-xs opacity-80">Enviado em 05/10/2026, 09:47</p>
-            </div>
-            <p class="text-base font-bold tabular-nums">− R$ 85,00</p>
-          </li>
+        <li class="rounded-lg border border-dashed border-line p-3 text-sm text-mute">Carregando transações...</li>
       </ul>
       <button id="btn-ver-mais" type="button" class="btn-sec mt-4 w-full text-sm">Ver mais</button>
     </section>
@@ -212,7 +143,7 @@
       <div class="flex items-start justify-between">
         <div>
           <h2 class="text-lg font-semibold">Transferir</h2>
-          <p class="text-sm text-mute">Saldo disponível: <span id="saldo-modal" class="font-semibold tabular-nums">R$ 99,99</span></p>
+          <p class="text-sm text-mute">Saldo disponível: <span id="saldo-modal" class="font-semibold tabular-nums">R$ 0,00</span></p>
         </div>
         <button type="button" data-close class="rounded p-1 text-mute hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand" aria-label="Fechar">✕</button>
       </div>
