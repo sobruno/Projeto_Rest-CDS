@@ -10,6 +10,12 @@ services:
     networks:
       - backend
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/v3/api-docs"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   ms-financeiro:
     build: ./backend/ms-financeiro
@@ -18,21 +24,37 @@ services:
     networks:
       - backend
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8082/v3/api-docs"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   api-gateway:
     build: ./backend/api-gateway
     ports:
       - "8080:8080"
     environment:
-      - MS_AUTENTICACAO_URL=http://ms-autenticacao:8081
-      - MS_FINANCEIRO_URL=http://ms-financeiro:8082
+      - MS_AUTENTICACAO_URL=http://host.docker.internal:8081
+      - MS_FINANCEIRO_URL=http://host.docker.internal:8082
       - JWT_SECRET=0a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      - ms-autenticacao
-      - ms-financeiro
+      ms-autenticacao:
+        condition: service_healthy
+      ms-financeiro:
+        condition: service_healthy
     networks:
       - backend
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/swagger-ui/index.html"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   frontend:
     image: nginx:alpine

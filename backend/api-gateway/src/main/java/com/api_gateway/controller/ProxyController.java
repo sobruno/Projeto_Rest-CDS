@@ -8,6 +8,7 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -26,7 +27,14 @@ public class ProxyController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = createRestTemplate();
+
+    private RestTemplate createRestTemplate() {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(3000);
+        requestFactory.setReadTimeout(5000);
+        return new RestTemplate(requestFactory);
+    }
 
     // Cabeçalhos que NUNCA devem ser repassados entre Gateway <-> Microsserviços / Cliente
     private static final List<String> IGNORED_HEADERS = List.of(
@@ -35,6 +43,31 @@ public class ProxyController {
             "access-control-allow-origin", "access-control-allow-methods",
             "access-control-allow-headers", "access-control-allow-credentials"
     );
+
+    @GetMapping("/docs/{service}")
+    public ResponseEntity<byte[]> openApiDocument(@PathVariable String service) {
+        String serviceUrl = switch (service) {
+            case "autenticacao" -> msAutenticacaoUrl;
+            case "financeiro" -> msFinanceiroUrl;
+            default -> null;
+        };
+        if (serviceUrl == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            ResponseEntity<byte[]> response = restTemplate.getForEntity(serviceUrl + "/v3/api-docs", byte[].class);
+            return ResponseEntity.status(response.getStatusCode())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(response.getBody());
+        } catch (Exception e) {
+            byte[] error = ("{\"erro\":\"Nao foi possivel carregar a documentacao do servico " + service + "\"}")
+                .getBytes(StandardCharsets.UTF_8);
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(error);
+        }
+    }
 
     @RequestMapping(value = "/api/**", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.PATCH})
     public ResponseEntity<?> proxy(HttpServletRequest request, @RequestBody(required = false) byte[] body) {

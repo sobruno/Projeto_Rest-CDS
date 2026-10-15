@@ -32,6 +32,12 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
+        // A UI e os documentos OpenAPI sao publicos para permitir explorar as APIs sem login.
+        if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/docs/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 2. Libera rotas públicas de autenticação (/api/auth/**)
         if (path.startsWith("/api/auth")) {
             filterChain.doFilter(request, response);
