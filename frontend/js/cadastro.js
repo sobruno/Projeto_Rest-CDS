@@ -16,7 +16,6 @@
    *   senha: "senha"
    * }
    *
-   * Se o seu amigo usar outro endpoint, edite em js/api.js.
    */
 
   const form = document.getElementById("form-cadastro");

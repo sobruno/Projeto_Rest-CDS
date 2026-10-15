@@ -6,7 +6,10 @@
    * Base URL do Gateway: http://localhost:8080/api
    */
 
-  const API_BASE_URL = "http://localhost:8080/api";
+  // Detecta dinamicamente o IP/host de onde o frontend foi acessado (ex: localhost, 192.168.x.x)
+  const API_HOST = window.location.hostname || "localhost";
+  const API_PROTOCOL = window.location.protocol === "https:" ? "https:" : "http:";
+  const API_BASE_URL = `${API_PROTOCOL}//${API_HOST}:8080/api`;
   const DEFAULT_HEADERS = { "Content-Type": "application/json" };
 
   function getAuthToken() {
