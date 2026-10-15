@@ -3,6 +3,11 @@ package com.ms_autenticacao.controller;
 import com.ms_autenticacao.model.Usuario;
 import com.ms_autenticacao.repository.UsuarioRepository;
 import com.ms_autenticacao.security.JwtUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -12,6 +17,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Autenticacao", description = "Cadastro de usuarios e login. Essas operacoes nao exigem token.")
 public class AuthController {
 
     @Autowired
@@ -24,6 +30,12 @@ public class AuthController {
     private JwtUtil jwtUtil;
 
     @PostMapping("/cadastrar")
+        @Operation(summary = "Cadastrar usuario", description = "Cria um usuario. O nome, endereco e senha sao obrigatorios; email e opcional.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                content = @Content(mediaType = "application/json",
+                    examples = @ExampleObject(value = "{\"nome\":\"Ana Lima\",\"endereco\":\"ana-chave\",\"email\":\"ana@example.com\",\"senha\":\"Senha123!\"}"))))
+        @ApiResponse(responseCode = "200", description = "Usuario cadastrado")
+        @ApiResponse(responseCode = "400", description = "Campos obrigatorios ausentes ou nome ja cadastrado")
     public ResponseEntity<?> cadastrar(@RequestBody Usuario body) {
         try {
             // 1. Validação de campos obrigatórios
@@ -58,6 +70,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+        @Operation(summary = "Iniciar sessao", description = "Aceita nome de usuario ou email. Retorna um JWT Bearer para as operacoes financeiras.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                content = @Content(mediaType = "application/json",
+                    examples = @ExampleObject(value = "{\"nome\":\"Ana Lima\",\"senha\":\"Senha123!\"}"))))
+        @ApiResponse(responseCode = "200", description = "Login realizado; use o campo token no esquema Bearer JWT")
+        @ApiResponse(responseCode = "401", description = "Nome/email ou senha invalidos")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         try {
             String nome = body.get("nome") != null ? body.get("nome").trim() : "";

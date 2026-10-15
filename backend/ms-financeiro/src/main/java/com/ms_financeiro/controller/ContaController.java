@@ -7,6 +7,13 @@ import com.ms_financeiro.model.Transacao;
 import com.ms_financeiro.repository.AddressRepository;
 import com.ms_financeiro.repository.ContaRepository;
 import com.ms_financeiro.repository.TransacaoRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +29,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/contas")
+@Tag(name = "Contas", description = "Consulta de conta, depositos, transferencias e extratos.")
+@SecurityRequirement(name = "bearerAuth")
 public class ContaController {
 
     @Autowired
@@ -58,10 +67,13 @@ public class ContaController {
     }
 
     @GetMapping("/minha-conta")
+        @Operation(summary = "Consultar minha conta", description = "Retorna a conta vinculada ao usuario autenticado.")
+        @ApiResponse(responseCode = "200", description = "Conta encontrada")
+        @ApiResponse(responseCode = "401", description = "Token ausente ou invalido")
     public ResponseEntity<?> obterMinhaConta(
-            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
-            @RequestHeader(value = "X-User-Nome", required = false) String userNome,
-            @RequestHeader(value = "X-User-Chave", required = false) String userChave) {
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Nome", required = false) String userNome,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Chave", required = false) String userChave) {
         if (usuarioId == null) {
             return ResponseEntity.status(401).body(Map.of("erro", "Cabeçalho X-User-Id ausente ou inválido"));
         }
@@ -80,6 +92,13 @@ public class ContaController {
 
     @PostMapping("/depositar")
     @Transactional
+        @Operation(summary = "Depositar", description = "Adiciona um valor positivo ao saldo da conta autenticada.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                content = @Content(mediaType = "application/json",
+                    examples = @ExampleObject(value = "{\"valor\":100.00}"))))
+        @ApiResponse(responseCode = "200", description = "Deposito realizado")
+        @ApiResponse(responseCode = "400", description = "Valor ausente ou menor/igual a zero")
+        @ApiResponse(responseCode = "401", description = "Token ausente ou invalido")
     public ResponseEntity<?> depositar(@RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
                                        @RequestBody Map<String, Object> payload) {
         if (usuarioId == null) {
@@ -119,10 +138,17 @@ public class ContaController {
 
     @PostMapping("/transferir")
     @Transactional
+        @Operation(summary = "Transferir", description = "Transfere um valor positivo para outra conta. O destinatario pode ser uma chave, nome ou identificador de conta.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                content = @Content(mediaType = "application/json",
+                    examples = @ExampleObject(value = "{\"destinatario\":\"chave-do-destino\",\"valor\":25.00}"))))
+        @ApiResponse(responseCode = "200", description = "Transferencia realizada")
+        @ApiResponse(responseCode = "400", description = "Destinatario invalido, saldo insuficiente ou valor invalido")
+        @ApiResponse(responseCode = "401", description = "Token ausente ou invalido")
     public ResponseEntity<?> transferir(
-            @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
-            @RequestHeader(value = "X-User-Nome", required = false) String userNome,
-            @RequestHeader(value = "X-User-Chave", required = false) String userChave,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long usuarioId,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Nome", required = false) String userNome,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Chave", required = false) String userChave,
             @RequestBody Map<String, Object> payload) {
         if (usuarioId == null) {
             return ResponseEntity.status(401).body(Map.of("erro", "Cabeçalho X-User-Id ausente ou inválido"));
@@ -220,6 +246,8 @@ public class ContaController {
     }
 
     @GetMapping("/{contaId}/extrato")
+    @Operation(summary = "Consultar extrato", description = "Lista as transacoes de entrada e saida de uma conta, da mais recente para a mais antiga.")
+    @ApiResponse(responseCode = "200", description = "Extrato retornado")
     public ResponseEntity<List<Transacao>> obterExtrato(@PathVariable Long contaId) {
         List<Transacao> extrato = transacaoRepository.findByContaOrigemIdOrContaDestinoIdOrderByDataHoraDesc(contaId, contaId);
         return ResponseEntity.ok(extrato);
