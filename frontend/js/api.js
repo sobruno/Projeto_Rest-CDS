@@ -218,6 +218,79 @@
       clearAuthToken();
       return true;
     },
+
+    /**
+     * Estabelece conexão WebSocket com o API Gateway para atualizações em tempo real
+     */
+    connectWebSocket(onNotification, onStatusChange) {
+      const token = getAuthToken();
+      if (!token) return null;
+
+      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${wsProtocol}//${API_HOST}:8080/ws/notificacoes?token=${encodeURIComponent(token)}`;
+
+      let socket = null;
+      let reconnectTimer = null;
+
+      function connect() {
+        if (typeof onStatusChange === "function") {
+          onStatusChange("connecting");
+        }
+        try {
+          socket = new WebSocket(wsUrl);
+
+          socket.onopen = function () {
+            console.log("[WS] Conectado ao canal WebSocket de notificações.");
+            if (typeof onStatusChange === "function") {
+              onStatusChange("connected");
+            }
+            try {
+              socket.send(JSON.stringify({ tipo: "AUTH", token }));
+            } catch (e) {}
+          };
+
+          socket.onmessage = function (event) {
+            try {
+              const data = JSON.parse(event.data);
+              if (typeof onNotification === "function") {
+                onNotification(data);
+              }
+            } catch (err) {
+              console.warn("[WS] Mensagem não parseável:", event.data);
+            }
+          };
+
+          socket.onclose = function () {
+            console.log("[WS] Conexão encerrada. Reconectando em 4 segundos...");
+            if (typeof onStatusChange === "function") {
+              onStatusChange("disconnected");
+            }
+            clearTimeout(reconnectTimer);
+            reconnectTimer = setTimeout(connect, 4000);
+          };
+
+          socket.onerror = function (err) {
+            console.error("[WS] Erro no WebSocket:", err);
+            if (typeof onStatusChange === "function") {
+              onStatusChange("error");
+            }
+          };
+        } catch (e) {
+          console.error("[WS] Exceção ao abrir WebSocket:", e);
+          if (typeof onStatusChange === "function") {
+            onStatusChange("disconnected");
+          }
+        }
+      }
+
+      connect();
+      return {
+        close: () => {
+          clearTimeout(reconnectTimer);
+          if (socket) socket.close();
+        }
+      };
+    }
   };
 
   window.CDSApi = api;
