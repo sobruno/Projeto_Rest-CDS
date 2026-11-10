@@ -1,6 +1,7 @@
 package com.ms_financeiro.controller;
 
 import com.ms_financeiro.dto.ContaDto;
+import com.ms_financeiro.dto.TransferenciaResponseDto;
 import com.ms_financeiro.model.Address;
 import com.ms_financeiro.model.Conta;
 import com.ms_financeiro.model.Transacao;
@@ -205,7 +206,15 @@ public class ContaController {
         transacao.setDataHora(LocalDateTime.now());
         transacaoRepository.save(transacao);
 
-        ContaDto dto = new ContaDto(origem.getId(), origem.getUsuarioId(), origem.getTitular(), origem.getChave(), origem.getSaldo());
+        TransferenciaResponseDto dto = new TransferenciaResponseDto(origem.getId(), origem.getUsuarioId(), origem.getTitular(), origem.getChave(), origem.getSaldo());
+        dto.setDestinatarioContaId(destino.getId());
+        dto.setDestinatarioUsuarioId(destino.getUsuarioId());
+        dto.setDestinatarioTitular(destino.getTitular());
+        dto.setDestinatarioChave(destino.getChave());
+        dto.setDestinatarioSaldo(destino.getSaldo());
+        dto.setTransacaoId(transacao.getId());
+        dto.setValor(valor);
+        dto.setDataHora(transacao.getDataHora().toString());
 
         EntityModel<ContaDto> resource = EntityModel.of(dto);
         resource.add(linkTo(methodOn(ContaController.class).obterMinhaConta(usuarioId, userNome, userChave)).withRel("minha-conta"));

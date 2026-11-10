@@ -1,19 +1,24 @@
 package com.api_gateway.controller;
 
 import com.api_gateway.security.JwtUtil;
+import com.api_gateway.soap.SoapComprovanteClient;
+import com.api_gateway.websocket.NotificationWebSocketHandler;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class ProxyController {
@@ -26,6 +31,14 @@ public class ProxyController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private SoapComprovanteClient soapComprovanteClient;
+
+    @Autowired
+    private NotificationWebSocketHandler webSocketHandler;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final RestTemplate restTemplate = createRestTemplate();
 
@@ -118,8 +131,13 @@ public class ProxyController {
         try {
             ResponseEntity<byte[]> response = restTemplate.exchange(URI.create(targetUrl), httpMethod, httpEntity, byte[].class);
             byte[] respBody = response.getBody();
-            HttpHeaders cleanHeaders = filterResponseHeaders(response.getHeaders());
 
+            // Orquestração: após conclusão da transferência, invoca SOAP e notifica WebSocket
+            if (path.equals("/contas/transferir") && httpMethod == HttpMethod.POST && response.getStatusCode().is2xxSuccessful() && respBody != null) {
+                respBody = orquestrarTransferencia(respBody);
+            }
+
+            HttpHeaders cleanHeaders = filterResponseHeaders(response.getHeaders());
             var builder = ResponseEntity.status(response.getStatusCode()).headers(cleanHeaders);
             if (respBody != null) {
                 builder.contentLength(respBody.length);
@@ -144,6 +162,72 @@ public class ProxyController {
                     .contentLength(errBytes.length)
                     .body(errBytes);
         }
+    }
+
+    private byte[] orquestrarTransferencia(byte[] respBody) {
+        try {
+            Map<String, Object> map = objectMapper.readValue(respBody, Map.class);
+            if (map != null) {
+                String nomeRemetente = map.get("titular") != null ? map.get("titular").toString() : "Remetente";
+                String nomeDestinatario = map.get("destinatarioTitular") != null ? map.get("destinatarioTitular").toString() : "Destinatario";
+                String chaveDestinatario = map.get("destinatarioChave") != null ? map.get("destinatarioChave").toString() : "";
+                Double valor = map.get("valor") != null ? Double.parseDouble(map.get("valor").toString()) : 0.0;
+                String dataHora = map.get("dataHora") != null ? map.get("dataHora").toString() : "";
+
+                // 1. Invoca serviço SOAP para emissão do comprovante
+                Map<String, Object> comprovante = soapComprovanteClient.gerarComprovante(
+                        nomeRemetente,
+                        nomeDestinatario,
+                        chaveDestinatario,
+                        valor,
+                        dataHora
+                );
+                map.put("comprovante", comprovante);
+
+                // 2. Notifica o favorecido via WebSocket em tempo real
+                if (map.get("destinatarioUsuarioId") != null) {
+                    Long destUserId = Long.parseLong(map.get("destinatarioUsuarioId").toString());
+                    Double novoSaldoDestino = map.get("destinatarioSaldo") != null
+                            ? Double.parseDouble(map.get("destinatarioSaldo").toString()) : null;
+
+                    Map<String, Object> notifDestino = new HashMap<>();
+                    notifDestino.put("tipo", "SALDO_ATUALIZADO");
+                    notifDestino.put("saldo", novoSaldoDestino);
+                    Map<String, Object> transacaoDestino = new HashMap<>();
+                    transacaoDestino.put("tipo", "RECEBIDA");
+                    transacaoDestino.put("valor", valor);
+                    transacaoDestino.put("de", nomeRemetente);
+                    transacaoDestino.put("dataHora", dataHora);
+                    notifDestino.put("transacao", transacaoDestino);
+
+                    webSocketHandler.enviarParaUsuario(destUserId, notifDestino);
+                }
+
+                // 3. Notifica o remetente via WebSocket (outras abas/sessões abertas)
+                if (map.get("usuarioId") != null) {
+                    Long origUserId = Long.parseLong(map.get("usuarioId").toString());
+                    Double novoSaldoOrigem = map.get("saldo") != null
+                            ? Double.parseDouble(map.get("saldo").toString()) : null;
+
+                    Map<String, Object> notifOrigem = new HashMap<>();
+                    notifOrigem.put("tipo", "SALDO_ATUALIZADO");
+                    notifOrigem.put("saldo", novoSaldoOrigem);
+                    Map<String, Object> transacaoOrigem = new HashMap<>();
+                    transacaoOrigem.put("tipo", "TRANSFERENCIA");
+                    transacaoOrigem.put("valor", valor);
+                    transacaoOrigem.put("para", nomeDestinatario);
+                    transacaoOrigem.put("dataHora", dataHora);
+                    notifOrigem.put("transacao", transacaoOrigem);
+
+                    webSocketHandler.enviarParaUsuario(origUserId, notifOrigem);
+                }
+
+                return objectMapper.writeValueAsBytes(map);
+            }
+        } catch (Exception e) {
+            System.err.println("[GATEWAY] Erro na orquestracao pos-transferencia: " + e.getMessage());
+        }
+        return respBody;
     }
 
     // 3. Filtra os cabeçalhos de resposta retornados pelos microsserviços

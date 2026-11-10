@@ -31,6 +31,14 @@ services:
       retries: 12
       start_period: 20s
 
+  soap-comprovante:
+    build: ./backend/soap-comprovante
+    ports:
+      - "8088:8088"
+    networks:
+      - backend
+    restart: unless-stopped
+
   api-gateway:
     build: ./backend/api-gateway
     ports:
@@ -38,6 +46,7 @@ services:
     environment:
       - MS_AUTENTICACAO_URL=http://host.docker.internal:8081
       - MS_FINANCEIRO_URL=http://host.docker.internal:8082
+      - SOAP_COMPROVANTE_URL=http://host.docker.internal:8088/ws/comprovante
       - JWT_SECRET=0a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
     extra_hosts:
       - "host.docker.internal:host-gateway"
