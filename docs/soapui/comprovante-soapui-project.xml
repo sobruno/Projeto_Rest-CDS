@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<con:soapui-project id="9e8bf302-d922-4a0b-bc17-e81c195ebda1" activeEnvironment="Default" name="ComprovanteService" soapui-version="5.7.2" abortOnError="false" runType="SEQUENTIAL" xmlns:con="http://eviware.com/soapui/config">
+  <con:settings/>
+  <con:interface xsi:type="con:WsdlInterface" id="64bfbf9a-773b-41f2-959c-851532155099" wsaVersion="NONE" name="ComprovantePortBinding" type="wsdl" bindingOperationName="gerarComprovante" soapVersion="1_1" anonymous="optional" definition="http://localhost:8088/ws/comprovante?wsdl" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <con:settings/>
+    <con:definitionCache type="TEXT" rootPart="http://localhost:8088/ws/comprovante?wsdl">
+      <con:part>
+        <con:url>http://localhost:8088/ws/comprovante?wsdl</con:url>
+        <con:content><![CDATA[<definitions xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:wsp="http://www.w3.org/ns/ws-policy" xmlns:wsp1_2="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://soap.banco.com/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.xmlsoap.org/wsdl/" targetNamespace="http://soap.banco.com/" name="ComprovanteService">
+<types>
+<xsd:schema>
+<xsd:import namespace="http://soap.banco.com/" schemaLocation="http://localhost:8088/ws/comprovante?xsd=1"/>
+</xsd:schema>
+</types>
+<message name="consultarComprovante">
+<part name="parameters" element="tns:consultarComprovante"/>
+</message>
+<message name="consultarComprovanteResponse">
+<part name="parameters" element="tns:consultarComprovanteResponse"/>
+</message>
+<message name="ComprovanteFault">
+<part name="fault" element="tns:ComprovanteFault"/>
+</message>
+<message name="gerarComprovante">
+<part name="parameters" element="tns:gerarComprovante"/>
+</message>
+<message name="gerarComprovanteResponse">
+<part name="parameters" element="tns:gerarComprovanteResponse"/>
+</message>
+<portType name="ComprovanteService">
+<operation name="consultarComprovante">
+<input wsam:Action="http://soap.banco.com/ComprovanteService/consultarComprovanteRequest" message="tns:consultarComprovante"/>
+<output wsam:Action="http://soap.banco.com/ComprovanteService/consultarComprovanteResponse" message="tns:consultarComprovanteResponse"/>
+<fault message="tns:ComprovanteFault" name="ComprovanteFault" wsam:Action="http://soap.banco.com/ComprovanteService/consultarComprovante/Fault/ComprovanteFault"/>
+</operation>
+<operation name="gerarComprovante">
+<input wsam:Action="http://soap.banco.com/ComprovanteService/gerarComprovanteRequest" message="tns:gerarComprovante"/>
+<output wsam:Action="http://soap.banco.com/ComprovanteService/gerarComprovanteResponse" message="tns:gerarComprovanteResponse"/>
+<fault message="tns:ComprovanteFault" name="ComprovanteFault" wsam:Action="http://soap.banco.com/ComprovanteService/gerarComprovante/Fault/ComprovanteFault"/>
+</operation>
+</portType>
+<binding name="ComprovantePortBinding" type="tns:ComprovanteService">
+<soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+<operation name="consultarComprovante">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal"/>
+</input>
+<output>
+<soap:body use="literal"/>
+</output>
+<fault name="ComprovanteFault">
+<soap:fault name="ComprovanteFault" use="literal"/>
+</fault>
+</operation>
+<operation name="gerarComprovante">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal"/>
+</input>
+<output>
+<soap:body use="literal"/>
+</output>
+<fault name="ComprovanteFault">
+<soap:fault name="ComprovanteFault" use="literal"/>
+</fault>
+</operation>
+</binding>
+<service name="ComprovanteService">
+<port name="ComprovantePort" binding="tns:ComprovantePortBinding">
+<soap:address location="http://localhost:8088/ws/comprovante"/>
+</port>
+</service>
+</definitions>]]></con:content>
+        <con:type>http://schemas.xmlsoap.org/wsdl/</con:type>
+      </con:part>
+    </con:definitionCache>
+    <con:endpoints>
+      <con:endpoint>http://localhost:8088/ws/comprovante</con:endpoint>
+    </con:endpoints>
+    <con:operation id="a4e76a6b-8515-4fa1-8411-cf0b91e98d5a" isOneWay="false" action="" name="gerarComprovante" bindingOperationName="gerarComprovante" type="Request-Response" inputName="" receivesAttachments="false" sendsAttachments="false" anonymous="optional">
+      <con:settings/>
+      <con:call id="386e82a0-43f5-442a-a92c-8a1dc380b621" name="1. Chamada Valida (Sucesso)">
+        <con:settings>
+          <con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/&gt;</con:setting>
+        </con:settings>
+        <con:encoding>UTF-8</con:encoding>
+        <con:endpoint>http://localhost:8088/ws/comprovante</con:endpoint>
+        <con:request><![CDATA[<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:soap="http://soap.banco.com/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <soap:gerarComprovante>
+         <nomeRemetente>Lucas Fernandes</nomeRemetente>
+         <nomeDestinatario>Maria Silva</nomeDestinatario>
+         <chaveDestinatario>maria@cds.com</chaveDestinatario>
+         <valor>150.00</valor>
+         <dataHora>2026-11-10T20:30:00</dataHora>
+      </soap:gerarComprovante>
+   </soapenv:Body>
+</soapenv:Envelope>]]></con:request>
+        <con:credentials>
+          <con:authType>No Authorization</con:authType>
+        </con:credentials>
+        <con:jmsConfig JMSDeliveryMode="PERSISTENT"/>
+        <con:jmsPropertyConfig/>
+        <con:wsaConfig mustUnderstand="NONE" version="200508" action="http://soap.banco.com/ComprovanteService/gerarComprovanteRequest"/>
+        <con:wsrmConfig version="1.2"/>
+      </con:call>
+      <con:call id="8a9dc748-0382-4f33-87bb-7ecb7b4d8d17" name="2. Chamada Invalida (Valor Negativo)">
+        <con:settings>
+          <con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/&gt;</con:setting>
+        </con:settings>
+        <con:encoding>UTF-8</con:encoding>
+        <con:endpoint>http://localhost:8088/ws/comprovante</con:endpoint>
+        <con:request><![CDATA[<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:soap="http://soap.banco.com/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <soap:gerarComprovante>
+         <nomeRemetente>Lucas Fernandes</nomeRemetente>
+         <nomeDestinatario>Maria Silva</nomeDestinatario>
+         <chaveDestinatario>maria@cds.com</chaveDestinatario>
+         <valor>-50.00</valor>
+         <dataHora>2026-11-10T20:30:00</dataHora>
+      </soap:gerarComprovante>
+   </soapenv:Body>
+</soapenv:Envelope>]]></con:request>
+        <con:credentials>
+          <con:authType>No Authorization</con:authType>
+        </con:credentials>
+        <con:jmsConfig JMSDeliveryMode="PERSISTENT"/>
+        <con:jmsPropertyConfig/>
+        <con:wsaConfig mustUnderstand="NONE" version="200508" action="http://soap.banco.com/ComprovanteService/gerarComprovanteRequest"/>
+        <con:wsrmConfig version="1.2"/>
+      </con:call>
+    </con:operation>
+    <con:operation id="357c3e56-11b2-4d51-9ef0-0322ba63f458" isOneWay="false" action="" name="consultarComprovante" bindingOperationName="consultarComprovante" type="Request-Response" inputName="" receivesAttachments="false" sendsAttachments="false" anonymous="optional">
+      <con:settings/>
+      <con:call id="6d4a7f92-5643-42e1-8cb5-455bfe988a01" name="1. Chamada Invalida (UUID Inexistente)">
+        <con:settings>
+          <con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/&gt;</con:setting>
+        </con:settings>
+        <con:encoding>UTF-8</con:encoding>
+        <con:endpoint>http://localhost:8088/ws/comprovante</con:endpoint>
+        <con:request><![CDATA[<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:soap="http://soap.banco.com/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <soap:consultarComprovante>
+         <codigoComprovante>00000000-0000-0000-0000-000000000000</codigoComprovante>
+      </soap:consultarComprovante>
+   </soapenv:Body>
+</soapenv:Envelope>]]></con:request>
+        <con:credentials>
+          <con:authType>No Authorization</con:authType>
+        </con:credentials>
+        <con:jmsConfig JMSDeliveryMode="PERSISTENT"/>
+        <con:jmsPropertyConfig/>
+        <con:wsaConfig mustUnderstand="NONE" version="200508" action="http://soap.banco.com/ComprovanteService/consultarComprovanteRequest"/>
+        <con:wsrmConfig version="1.2"/>
+      </con:call>
+    </con:operation>
+  </con:interface>
+  <con:properties/>
+  <con:wssContainer/>
+  <con:oAuth2ProfileContainer/>
+  <con:oAuth1ProfileContainer/>
+</con:soapui-project>
