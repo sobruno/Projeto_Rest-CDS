@@ -1,21 +1,10 @@
 #!/usr/bin/env python3
-"""
-Cliente Consumidor SOAP em Python utilizando Zeep.
-Demonstra a interoperabilidade entre cliente em Python e servidor Java JAX-WS.
-
-Cenários validados:
-1. Emissão de comprovante válido (Operação: gerarComprovante)
-2. Consulta de comprovante existente (Operação: consultarComprovante)
-3. Chamada inválida com valor <= 0 (Captura de SOAP Fault)
-4. Chamada inválida com código inexistente (Captura de SOAP Fault)
-"""
 
 import sys
 import datetime
 from zeep import Client
 from zeep.exceptions import Fault
 
-# Garante compatibilidade de saída com terminais Windows padrão
 if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
     try:
         sys.stdout.reconfigure(encoding='utf-8')
@@ -42,9 +31,6 @@ def main():
         print(f"Detalhes: {e}")
         sys.exit(1)
 
-    # -------------------------------------------------------------
-    # CENÁRIO 1: Chamada Válida - Gerar Comprovante
-    # -------------------------------------------------------------
     print_separator("Cenario 1: Emissao de Comprovante Valido (gerarComprovante)")
     nome_remetente = "Carlos Eduardo"
     nome_destinatario = "Ana Beatriz"
@@ -79,9 +65,6 @@ def main():
     except Exception as e:
         print(f"[ERRO] {e}")
 
-    # -------------------------------------------------------------
-    # CENÁRIO 2: Chamada Válida - Consultar Comprovante
-    # -------------------------------------------------------------
     if codigo_gerado:
         print_separator("Cenario 2: Consulta de Comprovante Emitido (consultarComprovante)")
         print(f"Consultando UUID gerado no cenario 1: {codigo_gerado}")
@@ -96,9 +79,6 @@ def main():
         except Fault as fault:
             print(f"[SOAP FAULT] Falha na consulta: {fault}")
 
-    # -------------------------------------------------------------
-    # CENÁRIO 3: Chamada Inválida 1 - Valor Negativo (Tratamento de Erro)
-    # -------------------------------------------------------------
     print_separator("Cenario 3: Validacao de Erro - Valor Negativo (gerarComprovante)")
     print("Tentando emitir comprovante com valor invalido: R$ -50.00")
     try:
@@ -117,9 +97,6 @@ def main():
         if fault.detail is not None:
             print(f"  * Detalhe XML       : {client.wsdl.types.to_string(fault.detail) if hasattr(client.wsdl.types, 'to_string') else fault.detail}")
 
-    # -------------------------------------------------------------
-    # CENÁRIO 4: Chamada Inválida 2 - Código Inexistente (Tratamento de Erro)
-    # -------------------------------------------------------------
     print_separator("Cenario 4: Validacao de Erro - UUID Inexistente (consultarComprovante)")
     uuid_falso = "00000000-0000-0000-0000-000000000000"
     print(f"Tentando consultar codigo inexistente: {uuid_falso}")

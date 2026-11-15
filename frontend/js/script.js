@@ -1,10 +1,6 @@
 (function () {
   "use strict";
 
-  /*
-   * DASHBOARD / CARTEIRA COM WEBSOCKET E COMPROVANTE SOAP
-   */
-
   const pageBody = document.body;
 
   function formatCurrency(value) {
@@ -53,7 +49,6 @@
     const saldoModal = document.getElementById("saldo-modal");
     const avatar = document.getElementById("avatar");
 
-    // ALINHADO COM O ContaDto.java (procura titular ou nome)
     const nomeExibicao = profile?.titular || profile?.nome || "";
 
     if (nomeUsuario) {
@@ -131,7 +126,7 @@
 
     list.innerHTML = transactions
       .map((item) => {
-        // ALINHADO COM O Transacao.java (trata dataHora, DEPOSITO e TRANSFERENCIA)
+
         const isDeposito = item.tipo === "DEPOSITO";
         const isEntrada =
           isDeposito ||
@@ -284,7 +279,7 @@
         }
 
         try {
-          // Envia destinatário (chave/endereço ou ID) e valor
+
           const result = await window.CDSApi.transfer({
             destinatario,
             valor,
@@ -293,7 +288,6 @@
           document.getElementById("dlg-transferir").close();
           transferForm.reset();
 
-          // Exibe o comprovante oficial emitido pelo serviço SOAP
           if (result && result.comprovante) {
             renderComprovante(result.comprovante, {
               valor,
@@ -407,7 +401,7 @@
       function onMessage(data) {
         console.log("[NOTIFICACAO WEBSOCKET RECEBIDA]", data);
         if (data.tipo === "SALDO_ATUALIZADO") {
-          // Atualiza saldo na tela instantaneamente sem reload
+
           if (data.saldo !== null && data.saldo !== undefined) {
             const saldoEl = document.getElementById("saldo");
             const saldoModalEl = document.getElementById("saldo-modal");
@@ -415,7 +409,6 @@
             if (saldoModalEl) saldoModalEl.textContent = formatCurrency(data.saldo);
           }
 
-          // Atualiza extrato de transações
           loadDashboard();
         }
       },

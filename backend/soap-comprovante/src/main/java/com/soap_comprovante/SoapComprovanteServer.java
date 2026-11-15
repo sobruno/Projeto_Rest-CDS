@@ -2,10 +2,6 @@ package com.soap_comprovante;
 
 import jakarta.xml.ws.Endpoint;
 
-/**
- * Servidor SOAP autônomo (JAX-WS).
- * Não depende de Spring Boot, evidenciando o uso direto de JAX-WS e contratos WSDL.
- */
 public class SoapComprovanteServer {
 
     public static final String URL_ENDPOINT = "http://0.0.0.0:8088/ws/comprovante";
@@ -24,7 +20,6 @@ public class SoapComprovanteServer {
         System.out.println("[SOAP-SERVER] Pressione CTRL+C para encerrar o servidor.");
         System.out.println("===============================================================");
 
-        // Mantém a aplicação viva caso executado em thread não-daemon
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("[SOAP-SERVER] Encerrando endpoint SOAP...");
             if (endpoint.isPublished()) {

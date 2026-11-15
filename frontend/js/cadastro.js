@@ -1,23 +1,6 @@
 (function () {
   "use strict";
 
-  /*
-   * =========================================
-   * CADASTRO
-   * =========================================
-   *
-   * Função: capturar os campos do formulário e enviar para o backend.
-   * O backend deve criar o usuário e, se necessário, hash da senha.
-   *
-   * Payload esperado no backend:
-   * {
-   *   username: "nome do usuário",
-   *   endereco: "identificador do endereço/conta",
-   *   senha: "senha"
-   * }
-   *
-   */
-
   const form = document.getElementById("form-cadastro");
 
   if (!form) {

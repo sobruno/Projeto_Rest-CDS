@@ -9,9 +9,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Implementação concreta do serviço Web SOAP de Comprovante Bancário.
- */
 @WebService(
         endpointInterface = "com.soap_comprovante.ComprovanteService",
         targetNamespace = "http://soap.banco.com/",
@@ -20,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 )
 public class ComprovanteServiceImpl implements ComprovanteService {
 
-    // Repositório thread-safe simulado em memória
     private static final Map<String, Comprovante> REPOSITORIO_COMPROVANTES = new ConcurrentHashMap<>();
 
     @Override
@@ -30,7 +26,6 @@ public class ComprovanteServiceImpl implements ComprovanteService {
         System.out.println("[SOAP-SERVER] Recebida solicitação de emissão de comprovante:");
         System.out.printf("  -> Remetente: %s | Destinatário: %s | Valor: R$ %s%n", nomeRemetente, nomeDestinatario, valor);
 
-        // Validação 1: Nomes obrigatórios
         if (nomeRemetente == null || nomeRemetente.trim().isEmpty() ||
             nomeDestinatario == null || nomeDestinatario.trim().isEmpty()) {
             throw new ComprovanteFault(
@@ -39,7 +34,6 @@ public class ComprovanteServiceImpl implements ComprovanteService {
             );
         }
 
-        // Validação 2: Valor positivo
         if (valor == null || valor <= 0.0) {
             throw new ComprovanteFault(
                     "Valor da transferência inválido.",
@@ -47,7 +41,6 @@ public class ComprovanteServiceImpl implements ComprovanteService {
             );
         }
 
-        // Formata data se ausente
         String dataHoraRegistro = (dataHora != null && !dataHora.isBlank())
                 ? dataHora
                 : LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);

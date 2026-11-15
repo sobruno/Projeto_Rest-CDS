@@ -1,12 +1,6 @@
 (function () {
   "use strict";
 
-  /*
-   * CAMADA DE INTEGRAÇÃO COM O BACKEND SPRING BOOT (API GATEWAY)
-   * Base URL do Gateway: http://localhost:8080/api
-   */
-
-  // Detecta dinamicamente o IP/host de onde o frontend foi acessado (ex: localhost, 192.168.x.x)
   const API_HOST = window.location.hostname || "localhost";
   const API_PROTOCOL = window.location.protocol === "https:" ? "https:" : "http:";
   const API_BASE_URL = `${API_PROTOCOL}//${API_HOST}:8080/api`;
@@ -172,7 +166,6 @@
       });
     },
 
-    // ALINHADO COM O ContaController.java (/contas/minha-conta)
     getProfile() {
       return request("/contas/minha-conta");
     },
@@ -188,7 +181,6 @@
       });
     },
 
-    // ALINHADO COM O ContaController.java (/contas/depositar)
     deposit(valor) {
       return request("/contas/depositar", {
         method: "POST",
@@ -196,7 +188,6 @@
       });
     },
 
-    // ALINHADO COM O ContaController.java (/contas/transferir)
     transfer(payload) {
       return request("/contas/transferir", {
         method: "POST",
@@ -204,7 +195,6 @@
       });
     },
 
-    // Busca o extrato utilizando a conta do próprio usuário logado
     async getTransactions(limit = 5) {
       const conta = await this.getProfile();
       const contaId = conta.id || (conta.content && conta.content.id);
@@ -219,9 +209,6 @@
       return true;
     },
 
-    /**
-     * Estabelece conexão WebSocket com o API Gateway para atualizações em tempo real
-     */
     connectWebSocket(onNotification, onStatusChange) {
       const token = getAuthToken();
       if (!token) return null;

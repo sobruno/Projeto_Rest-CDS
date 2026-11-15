@@ -17,10 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Cliente HTTP/SOAP integrado ao API Gateway para consumir o serviço JAX-WS
- * de emissão de comprovantes de transferência.
- */
 @Component
 public class SoapComprovanteClient {
 
@@ -33,7 +29,7 @@ public class SoapComprovanteClient {
         System.out.println("[GATEWAY -> SOAP] Invocando servico SOAP em: " + soapEndpointUrl);
 
         String soapRequest = String.format("""
-                <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ws="http://soap.banco.com/">
+                <soapenv:Envelope xmlns:soapenv="http:
                    <soapenv:Header/>
                    <soapenv:Body>
                       <ws:gerarComprovante>

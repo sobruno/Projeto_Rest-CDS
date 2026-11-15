@@ -24,7 +24,6 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 1. Responde ou delega preflight (OPTIONS)
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
@@ -32,19 +31,16 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // A UI e os documentos OpenAPI sao publicos para permitir explorar as APIs sem login.
         if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") || path.startsWith("/docs/")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 2. Libera rotas públicas de autenticação (/api/auth/**)
-        if (path.startsWith("/api/auth")) {
+        if (path.startsWith("/api/auth") || path.startsWith("/ws/")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 4. Validação do Token JWT e extração do ID do Usuário
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
@@ -54,7 +50,6 @@ public class JwtFilter extends OncePerRequestFilter {
                 String userNome = claims.get("nome") != null ? claims.get("nome").toString() : null;
                 String userChave = claims.get("endereco") != null ? claims.get("endereco").toString() : null;
 
-                // Empacota o request injetando os cabeçalhos do usuário
                 HttpServletRequestWrapper wrappedRequest = new HttpServletRequestWrapper(request) {
                     @Override
                     public String getHeader(String name) {
@@ -99,7 +94,6 @@ public class JwtFilter extends OncePerRequestFilter {
             }
         }
 
-        // 5. Retorna 401 para requisições sem token válido
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
         response.getWriter().write("{\"erro\": \"Token invalido ou ausente\"}");

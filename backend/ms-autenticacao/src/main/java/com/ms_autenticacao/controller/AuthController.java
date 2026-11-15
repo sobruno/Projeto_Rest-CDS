@@ -38,7 +38,7 @@ public class AuthController {
         @ApiResponse(responseCode = "400", description = "Campos obrigatorios ausentes ou nome ja cadastrado")
     public ResponseEntity<?> cadastrar(@RequestBody Usuario body) {
         try {
-            // 1. Validação de campos obrigatórios
+
             String nome = body.getNome() != null ? body.getNome().trim() : null;
             String endereco = body.getEndereco() != null ? body.getEndereco().trim() : null;
             String senha = body.getSenha();
@@ -49,18 +49,15 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(Map.of("erro", "Preencha todos os campos obrigatórios"));
             }
 
-            // 2. Verifica se o usuário já existe
             if (usuarioRepository.findByNomeIgnoreCase(nome).isPresent()) {
                 return ResponseEntity.badRequest().body(Map.of("erro", "Nome já cadastrado"));
             }
 
-            // 3. Criptografa a senha e salva
             body.setNome(nome);
             body.setEndereco(endereco);
             body.setSenha(passwordEncoder.encode(senha));
             Usuario saved = usuarioRepository.save(body);
 
-            // Evita retornar o hash da senha no JSON de resposta por segurança
             saved.setSenha(null);
 
             return ResponseEntity.ok(saved);

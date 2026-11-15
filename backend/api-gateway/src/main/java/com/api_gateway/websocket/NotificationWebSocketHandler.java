@@ -11,15 +11,13 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Gerenciador de conexões WebSocket para notificações em tempo real.
- * Permite notificar usuários individualmente (ex: saldo atualizado) ou broadcast.
- */
 @Component
 public class NotificationWebSocketHandler extends TextWebSocketHandler {
 
@@ -28,10 +26,8 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Mapeamento: usuarioId -> conjunto de sessões ativas (ex: várias abas abertas)
     private final Map<Long, Set<WebSocketSession>> userSessions = new ConcurrentHashMap<>();
 
-    // Mapeamento: sessionId -> usuarioId
     private final Map<String, Long> sessionToUser = new ConcurrentHashMap<>();
 
     @Override
@@ -48,7 +44,7 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         try {
-            // Permite autenticação via primeira mensagem enviada pelo cliente: {"tipo":"AUTH", "token":"..."}
+
             Map<?, ?> payload = objectMapper.readValue(message.getPayload(), Map.class);
             if (payload != null && "AUTH".equals(payload.get("tipo"))) {
                 Object tokenObj = payload.get("token");
@@ -91,20 +87,22 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
                 String[] params = uri.getQuery().split("&");
                 for (String param : params) {
                     if (param.startsWith("token=")) {
-                        String token = param.substring(6);
+
+                        String tokenEncoded = param.substring(6);
+                        String token = URLDecoder.decode(tokenEncoded, StandardCharsets.UTF_8);
                         var claims = jwtUtil.parseClaims(token);
-                        return Long.parseLong(claims.getSubject());
+                        Long usuarioId = Long.parseLong(claims.getSubject());
+                        System.out.println("[WEBSOCKET] Token extraído da URL com sucesso para usuário ID: " + usuarioId);
+                        return usuarioId;
                     }
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            System.err.println("[WEBSOCKET] Falha ao extrair token da URL: " + e.getMessage());
         }
         return null;
     }
 
-    /**
-     * Envia mensagem JSON para todas as abas/dispositivos do usuário informado.
-     */
     public void enviarParaUsuario(Long usuarioId, Object payload) {
         if (usuarioId == null) return;
         Set<WebSocketSession> sessions = userSessions.get(usuarioId);

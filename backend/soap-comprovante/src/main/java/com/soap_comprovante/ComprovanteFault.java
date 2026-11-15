@@ -2,10 +2,6 @@ package com.soap_comprovante;
 
 import jakarta.xml.ws.WebFault;
 
-/**
- * Exceção personalizada mapeada para SOAP Fault.
- * Permite demonstrar o tratamento e retorno padronizado de erro com Envelope SOAP.
- */
 @WebFault(name = "ComprovanteFault", targetNamespace = "http://soap.banco.com/")
 public class ComprovanteFault extends Exception {
 

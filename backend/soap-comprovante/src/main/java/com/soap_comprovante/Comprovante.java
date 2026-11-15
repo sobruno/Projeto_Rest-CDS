@@ -6,9 +6,6 @@ import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlType;
 import java.io.Serializable;
 
-/**
- * Entidade que representa o Comprovante de Transferência emitido pelo serviço SOAP.
- */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "Comprovante", namespace = "http://soap.banco.com/")
 public class Comprovante implements Serializable {
