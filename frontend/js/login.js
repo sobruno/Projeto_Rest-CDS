@@ -1,23 +1,12 @@
 (function () {
   "use strict";
 
-  /*
-   * =========================================
-   * LOGIN
-   * =========================================
-   *
-   * Função: enviar username + password para o backend.
-   * O backend deve validar o usuário e devolver um token JWT ou sessão.
-
-   */
-
   const form = document.getElementById("form-login");
 
   if (!form) {
     return;
   }
 
-  // Limpa sessão prévia residual ao entrar na tela de login
   if (window.CDSApi && typeof window.CDSApi.clearToken === "function") {
     window.CDSApi.clearToken();
   }

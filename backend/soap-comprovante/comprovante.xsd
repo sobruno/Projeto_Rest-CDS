@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='UTF-8'?><!-- Published by XML-WS Runtime (https://github.com/eclipse-ee4j/metro-jax-ws). Runtime's version is XML-WS Runtime 4.0.2 git-revision#0264419. --><xs:schema xmlns:tns="http://soap.banco.com/" xmlns:xs="http://www.w3.org/2001/XMLSchema" version="1.0" targetNamespace="http://soap.banco.com/">
+
+<xs:element name="ComprovanteFault" nillable="true" type="tns:ComprovanteFaultInfo"/>
+
+<xs:element name="consultarComprovante" type="tns:consultarComprovante"/>
+
+<xs:element name="consultarComprovanteResponse" type="tns:consultarComprovanteResponse"/>
+
+<xs:element name="gerarComprovante" type="tns:gerarComprovante"/>
+
+<xs:element name="gerarComprovanteResponse" type="tns:gerarComprovanteResponse"/>
+
+<xs:complexType name="consultarComprovante">
+<xs:sequence>
+<xs:element name="codigoComprovante" type="xs:string" minOccurs="0"/>
+</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="consultarComprovanteResponse">
+<xs:sequence>
+<xs:element name="comprovante" type="tns:Comprovante" minOccurs="0"/>
+</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="Comprovante">
+<xs:sequence>
+<xs:element name="codigoComprovante" type="xs:string"/>
+<xs:element name="autenticacaoEletronica" type="xs:string"/>
+<xs:element name="nomeRemetente" type="xs:string"/>
+<xs:element name="nomeDestinatario" type="xs:string"/>
+<xs:element name="chaveDestinatario" type="xs:string"/>
+<xs:element name="valor" type="xs:double"/>
+<xs:element name="dataHora" type="xs:string"/>
+<xs:element name="status" type="xs:string"/>
+</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="ComprovanteFaultInfo">
+<xs:sequence>
+<xs:element name="codigoErro" type="xs:string"/>
+<xs:element name="mensagem" type="xs:string"/>
+</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="gerarComprovante">
+<xs:sequence>
+<xs:element name="nomeRemetente" type="xs:string" minOccurs="0"/>
+<xs:element name="nomeDestinatario" type="xs:string" minOccurs="0"/>
+<xs:element name="chaveDestinatario" type="xs:string" minOccurs="0"/>
+<xs:element name="valor" type="xs:double" minOccurs="0"/>
+<xs:element name="dataHora" type="xs:string" minOccurs="0"/>
+</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="gerarComprovanteResponse">
+<xs:sequence>
+<xs:element name="comprovante" type="tns:Comprovante" minOccurs="0"/>
+</xs:sequence>
+</xs:complexType>
+</xs:schema>

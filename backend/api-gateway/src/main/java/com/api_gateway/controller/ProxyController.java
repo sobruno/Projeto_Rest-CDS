@@ -1,19 +1,24 @@
 package com.api_gateway.controller;
 
 import com.api_gateway.security.JwtUtil;
+import com.api_gateway.soap.SoapComprovanteClient;
+import com.api_gateway.websocket.NotificationWebSocketHandler;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class ProxyController {
@@ -27,6 +32,14 @@ public class ProxyController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private SoapComprovanteClient soapComprovanteClient;
+
+    @Autowired
+    private NotificationWebSocketHandler webSocketHandler;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     private final RestTemplate restTemplate = createRestTemplate();
 
     private RestTemplate createRestTemplate() {
@@ -36,7 +49,6 @@ public class ProxyController {
         return new RestTemplate(requestFactory);
     }
 
-    // Cabeçalhos que NUNCA devem ser repassados entre Gateway <-> Microsserviços / Cliente
     private static final List<String> IGNORED_HEADERS = List.of(
             "host", "content-length", "transfer-encoding", "connection",
             "keep-alive", "te", "trailers", "upgrade", "proxy-authorization", "proxy-authenticate",
@@ -85,7 +97,6 @@ public class ProxyController {
             targetUrl += "?" + request.getQueryString();
         }
 
-        // 1. Filtra os cabeçalhos de entrada enviando apenas os necessários
         HttpHeaders headers = new HttpHeaders();
         var headerEnum = request.getHeaderNames();
         if (headerEnum != null) {
@@ -96,7 +107,6 @@ public class ProxyController {
             });
         }
 
-        // 2. Injeta dados do usuário extraídos do Token JWT para o microsserviço de destino
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             try {
@@ -118,8 +128,12 @@ public class ProxyController {
         try {
             ResponseEntity<byte[]> response = restTemplate.exchange(URI.create(targetUrl), httpMethod, httpEntity, byte[].class);
             byte[] respBody = response.getBody();
-            HttpHeaders cleanHeaders = filterResponseHeaders(response.getHeaders());
 
+            if (path.equals("/contas/transferir") && httpMethod == HttpMethod.POST && response.getStatusCode().is2xxSuccessful() && respBody != null) {
+                respBody = orquestrarTransferencia(respBody);
+            }
+
+            HttpHeaders cleanHeaders = filterResponseHeaders(response.getHeaders());
             var builder = ResponseEntity.status(response.getStatusCode()).headers(cleanHeaders);
             if (respBody != null) {
                 builder.contentLength(respBody.length);
@@ -146,7 +160,102 @@ public class ProxyController {
         }
     }
 
-    // 3. Filtra os cabeçalhos de resposta retornados pelos microsserviços
+    private Double toDouble(Object v) {
+        if (v == null) return null;
+        try { return Double.parseDouble(v.toString()); } catch (Exception e) { return null; }
+    }
+
+    private Long toLong(Object v) {
+        if (v == null) return null;
+        try { return Long.parseLong(v.toString()); } catch (Exception e) { return null; }
+    }
+
+    private byte[] orquestrarTransferencia(byte[] respBody) {
+        String rawJson = new String(respBody, StandardCharsets.UTF_8);
+        System.out.println("[GATEWAY] JSON de transferencia recebido do ms-financeiro: " + rawJson);
+        try {
+            Map<String, Object> map = objectMapper.readValue(rawJson, Map.class);
+            if (map == null) return respBody;
+
+            Map<String, Object> data;
+            Object contentObj = map.get("content");
+            if (contentObj instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> contentMap = (Map<String, Object>) contentObj;
+                data = new HashMap<>(contentMap);
+
+                map.forEach((k, v) -> { if (!k.equals("content")) data.putIfAbsent(k, v); });
+            } else {
+
+                data = new HashMap<>(map);
+            }
+
+            System.out.println("[GATEWAY] Dados aplanados para orquestracao: "
+                    + "titular=" + data.get("titular")
+                    + " valor=" + data.get("valor")
+                    + " destUsuarioId=" + data.get("destinatarioUsuarioId"));
+
+            String nomeRemetente    = data.get("titular") != null             ? data.get("titular").toString()             : "Remetente";
+            String nomeDestinatario = data.get("destinatarioTitular") != null ? data.get("destinatarioTitular").toString() : "Destinatario";
+            String chaveDestinatario= data.get("destinatarioChave") != null   ? data.get("destinatarioChave").toString()   : "";
+            Double valor            = toDouble(data.get("valor"));
+            String dataHora         = data.get("dataHora") != null            ? data.get("dataHora").toString()            : "";
+
+            if (valor == null || valor <= 0.0) {
+                System.err.println("[GATEWAY] Valor invalido extraido para comprovante: " + data.get("valor") + " — pulando SOAP.");
+                valor = 0.01;
+            }
+
+            try {
+                Map<String, Object> comprovante = soapComprovanteClient.gerarComprovante(
+                        nomeRemetente, nomeDestinatario, chaveDestinatario, valor, dataHora);
+                data.put("comprovante", comprovante);
+                System.out.println("[GATEWAY] Comprovante SOAP gerado com sucesso.");
+            } catch (Exception soapEx) {
+                System.err.println("[GATEWAY] SOAP indisponivel: " + soapEx.getMessage());
+                Map<String, Object> comprovanteErro = new HashMap<>();
+                comprovanteErro.put("status", "SOAP_INDISPONIVEL");
+                data.put("comprovante", comprovanteErro);
+            }
+
+            Long destUserId = toLong(data.get("destinatarioUsuarioId"));
+            if (destUserId != null) {
+                Double novoSaldoDestino = toDouble(data.get("destinatarioSaldo"));
+                Map<String, Object> notifDestino = new HashMap<>();
+                notifDestino.put("tipo", "SALDO_ATUALIZADO");
+                notifDestino.put("saldo", novoSaldoDestino);
+                Map<String, Object> tx = new HashMap<>();
+                tx.put("tipo", "RECEBIDA"); tx.put("valor", valor);
+                tx.put("de", nomeRemetente); tx.put("dataHora", dataHora);
+                notifDestino.put("transacao", tx);
+                webSocketHandler.enviarParaUsuario(destUserId, notifDestino);
+                System.out.println("[GATEWAY] WebSocket enviado ao destinatario ID=" + destUserId);
+            }
+
+            Long origUserId = toLong(data.get("usuarioId"));
+            if (origUserId != null) {
+                Double novoSaldoOrigem = toDouble(data.get("saldo"));
+                Map<String, Object> notifOrigem = new HashMap<>();
+                notifOrigem.put("tipo", "SALDO_ATUALIZADO");
+                notifOrigem.put("saldo", novoSaldoOrigem);
+                Map<String, Object> tx = new HashMap<>();
+                tx.put("tipo", "TRANSFERENCIA"); tx.put("valor", valor);
+                tx.put("para", nomeDestinatario); tx.put("dataHora", dataHora);
+                notifOrigem.put("transacao", tx);
+                webSocketHandler.enviarParaUsuario(origUserId, notifOrigem);
+                System.out.println("[GATEWAY] WebSocket enviado ao remetente ID=" + origUserId);
+            }
+
+            return objectMapper.writeValueAsBytes(data);
+
+        } catch (Exception e) {
+            System.err.println("[GATEWAY] Erro CRITICO na orquestracao pos-transferencia: "
+                    + e.getClass().getSimpleName() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+        return respBody;
+    }
+
     private HttpHeaders filterResponseHeaders(HttpHeaders headers) {
         HttpHeaders cleanHeaders = new HttpHeaders();
         if (headers != null) {

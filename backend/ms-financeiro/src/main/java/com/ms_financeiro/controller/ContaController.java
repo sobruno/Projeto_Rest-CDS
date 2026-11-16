@@ -1,6 +1,7 @@
 package com.ms_financeiro.controller;
 
 import com.ms_financeiro.dto.ContaDto;
+import com.ms_financeiro.dto.TransferenciaResponseDto;
 import com.ms_financeiro.model.Address;
 import com.ms_financeiro.model.Conta;
 import com.ms_financeiro.model.Transacao;
@@ -205,7 +206,15 @@ public class ContaController {
         transacao.setDataHora(LocalDateTime.now());
         transacaoRepository.save(transacao);
 
-        ContaDto dto = new ContaDto(origem.getId(), origem.getUsuarioId(), origem.getTitular(), origem.getChave(), origem.getSaldo());
+        TransferenciaResponseDto dto = new TransferenciaResponseDto(origem.getId(), origem.getUsuarioId(), origem.getTitular(), origem.getChave(), origem.getSaldo());
+        dto.setDestinatarioContaId(destino.getId());
+        dto.setDestinatarioUsuarioId(destino.getUsuarioId());
+        dto.setDestinatarioTitular(destino.getTitular());
+        dto.setDestinatarioChave(destino.getChave());
+        dto.setDestinatarioSaldo(destino.getSaldo());
+        dto.setTransacaoId(transacao.getId());
+        dto.setValor(valor);
+        dto.setDataHora(transacao.getDataHora().toString());
 
         EntityModel<ContaDto> resource = EntityModel.of(dto);
         resource.add(linkTo(methodOn(ContaController.class).obterMinhaConta(usuarioId, userNome, userChave)).withRel("minha-conta"));
@@ -216,15 +225,13 @@ public class ContaController {
     }
 
     private Conta buscarContaDestino(String destStr) {
-        // 1. Busca pela chave exata da conta
+
         Conta conta = contaRepository.findByChaveIgnoreCase(destStr).orElse(null);
         if (conta != null) return conta;
 
-        // 2. Busca pelo nome do titular
         conta = contaRepository.findByTitularIgnoreCase(destStr).orElse(null);
         if (conta != null) return conta;
 
-        // 3. Se for numérico, tenta buscar por id da conta ou usuarioId
         try {
             Long numId = Long.parseLong(destStr);
             conta = contaRepository.findById(numId)
@@ -233,7 +240,6 @@ public class ContaController {
             if (conta != null) return conta;
         } catch (NumberFormatException ignored) {}
 
-        // 4. Se não achou na conta diretamente, verifica se existe um endereço salvo com essa chave
         Address addr = addressRepository.findByEndereco(destStr);
         if (addr != null) {
             conta = contaRepository.findByChaveIgnoreCase(addr.getEndereco())

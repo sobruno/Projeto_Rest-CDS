@@ -1,153 +1,96 @@
-# CDS — Carteira Digital Simplificada
-##### Projeto executado em parceria com [Henze Fernandes](https://github.com/enzenoide)
+# Carteira Digital Simplificada (CDS)
+## Arquitetura Distribuída com REST, SOAP e WebSocket
 
-Aplicação de demonstração de uma carteira digital. O projeto reúne uma interface web, um API Gateway e dois microsserviços Spring Boot para cadastro/autenticação e operações financeiras.
-> Este projeto é educacional e usa bancos H2 em memória. Não o utilize para movimentar dinheiro real nem como sistema financeiro de produção.
+Este projeto acadêmico implementa uma arquitetura orientada a serviços distribuída, combinando **REST/JSON**, **SOAP/WSDL** e **WebSocket** para resolver problemas reais de um fluxo financeiro de transferências bancárias.
 
-## Funcionalidades
+---
 
-- Cadastro de usuário e login com emissão de token JWT.
-- Consulta de conta e saldo.
-- Depósitos e transferências entre contas.
-- Extrato de transações.
-- Cadastro e consulta de endereços de destinatários.
-- Documentação interativa das APIs via Swagger UI.
-
-## Arquitetura
-
-| Componente | Responsabilidade | Porta local |
-| --- | --- | ---: |
-| `frontend` | Páginas estáticas servidas pelo Nginx | 3000 |
-| `api-gateway` | Roteamento das requisições e validação JWT | 8080 |
-| `ms-autenticacao` | Cadastro, login e emissão de JWT | 8081 |
-| `ms-financeiro` | Contas, depósitos, transferências e extrato | 8082 |
-
-O navegador acessa a API pelo Gateway em `http://localhost:8080/api`. O Gateway encaminha as rotas `/auth/**` ao serviço de autenticação e as demais rotas ao serviço financeiro. Os dois microsserviços usam bancos H2 em memória independentes, inicializados com dados de demonstração.
-
-## Requisitos
-
-- Docker com Docker Compose v2.
-- Para executar os serviços sem Docker: Java 17.
-
-## Executar com Docker Compose
-
-Na raiz do repositório, inicie os quatro serviços:
-
-```bash
-docker compose up --build
-```
-
-Quando os serviços estiverem prontos, acesse:
-
-- Aplicação: [http://localhost:3000](http://localhost:3000)
-- Swagger UI do Gateway: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
-- Documentação OpenAPI consolidada:
-  - Autenticação: [http://localhost:8080/docs/autenticacao](http://localhost:8080/docs/autenticacao)
-  - Financeiro: [http://localhost:8080/docs/financeiro](http://localhost:8080/docs/financeiro)
-
-Para encerrar os serviços, use `Ctrl+C`. Para remover os containers da execução:
-
-```bash
-docker compose down
-```
-
-Os dados dos bancos H2 são temporários e são perdidos quando o respectivo serviço é reiniciado.
-
-## Acessar a aplicação
-
-Na interface, crie um usuário em **Cadastre-se** ou use um dos usuários de demonstração carregados pelo serviço de autenticação:
-
-| Usuário | Senha |
-| --- | --- |
-| João Silva | `senha123` |
-| Maria Joaquina Dantas Souza | `senha123` |
-| Carol | `senha123` |
-
-Essas credenciais são somente para desenvolvimento local. O cadastro exige nome, endereço e senha; o e-mail é opcional na API. O login aceita nome de usuário ou e-mail.
-
-## API
-
-As rotas abaixo são acessadas pelo Gateway, prefixadas por `/api`. As operações financeiras e de endereços exigem o cabeçalho `Authorization` com o token JWT retornado no login.
-
-| Método | Rota | Acesso | Descrição |
-| --- | --- | --- | --- |
-| `POST` | `/api/auth/cadastrar` | Público | Cadastra usuário (`nome`, `endereco`, `senha`; `email` opcional). |
-| `POST` | `/api/auth/login` | Público | Autentica com `nome` ou e-mail e `senha`; retorna o JWT. |
-| `GET` | `/api/contas/minha-conta` | JWT | Consulta ou cria a conta do usuário autenticado. |
-| `POST` | `/api/contas/depositar` | JWT | Deposita um valor positivo (`valor`). |
-| `POST` | `/api/contas/transferir` | JWT | Transfere um valor positivo para outro destinatário. |
-| `GET` | `/api/contas/{contaId}/extrato` | JWT | Consulta transações de entrada e saída da conta. |
-| `GET` | `/api/enderecos` | JWT | Lista destinatários salvos pelo usuário. |
-| `POST` | `/api/enderecos` | JWT | Salva um destinatário (`nome`, `endereco`). |
-
-O destinatário de uma transferência pode ser informado como chave, nome do titular ou identificador da conta/usuário.
-
-### Exemplos
-
-Cadastrar um usuário:
-
-```bash
-curl -X POST http://localhost:8080/api/auth/cadastrar \
-  -H "Content-Type: application/json" \
-  -d "{\"nome\":\"Ana Lima\",\"endereco\":\"ana-chave\",\"email\":\"ana@example.com\",\"senha\":\"Senha123!\"}"
-```
-
-Fazer login e copiar o valor de `token` retornado:
-
-```bash
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d "{\"nome\":\"Ana Lima\",\"senha\":\"Senha123!\"}"
-```
-
-Nos exemplos seguintes, substitua `$TOKEN` pelo token retornado no login:
-
-```bash
-curl http://localhost:8080/api/contas/minha-conta \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-Depositar:
-
-```bash
-curl -X POST http://localhost:8080/api/contas/depositar \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"valor\":100.00}"
-```
-
-Transferir para uma chave ou destinatário:
-
-```bash
-curl -X POST http://localhost:8080/api/contas/transferir \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"destinatario\":\"chave-do-destino\",\"valor\":25.00}"
-```
-
-## Executar os serviços sem Docker
-
-Abra um terminal por serviço e execute, a partir da pasta correspondente:
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-Inicie `ms-autenticacao` (`backend/ms-autenticacao`) e `ms-financeiro` (`backend/ms-financeiro`) antes de `api-gateway` (`backend/api-gateway`). As URLs padrão do Gateway apontam para `http://localhost:8081` e `http://localhost:8082`. Para a interface web, sirva os arquivos da pasta `frontend` em um servidor estático; o frontend espera que o Gateway esteja disponível na porta `8080` do mesmo host.
-
-## Configuração
-
-O `docker-compose.yml` configura a variável `JWT_SECRET` para desenvolvimento e o Gateway usa `MS_AUTENTICACAO_URL` e `MS_FINANCEIRO_URL` para localizar os microsserviços. Fora do Docker, o Gateway usa por padrão as URLs locais definidas em `application.properties`.
-
-Defina um segredo JWT próprio e seguro em qualquer ambiente que não seja local. O valor incluído na configuração do Compose é apenas de demonstração e não deve ser reutilizado em produção.
-
-## Estrutura do repositório
+## 🏛 Arquitetura da Solução
 
 ```text
-backend/
-  api-gateway/       # Gateway, proxy e validação JWT
-  ms-autenticacao/   # Cadastro, login e usuários
-  ms-financeiro/     # Contas, endereços e transações
-frontend/            # Interface HTML, CSS e JavaScript
-docker-compose.yml   # Inicialização local dos serviços
+[Frontend Web] 
+      │ 
+      ├── (1. REST JSON) ───────────► [API Gateway :8080]
+      │                                    │
+      │                                    ├── (2. REST) ────► [ms-autenticacao :8081]
+      │                                    │
+      │                                    ├── (3. REST) ────► [ms-financeiro :8082]
+      │                                    │
+      │                                    ├── (4. SOAP XML) ─► [soap-comprovante :8088] (JAX-WS)
+      │                                    │                        ▲
+      │                                    │                        │ (Interoperabilidade)
+      │                                    │               [cliente-soap-python] (Zeep)
+      │                                    │
+      ◄── (5. Push WebSocket) ─────────────┘
 ```
+
+### Componentes do Sistema
+
+| Módulo | Tecnologia | Porta | Responsabilidade |
+| :--- | :--- | :--- | :--- |
+| **frontend** | HTML5, Tailwind CSS, JS Puro | `3000` | Interface do usuário com atualização de saldo em tempo real e exibição de comprovante. |
+| **api-gateway** | Spring Boot 3, WebSocket, RestTemplate | `8080` | Ponto de entrada único, validação JWT, proxy transparente, orquestração SOAP e servidor WebSocket (`/ws/notificacoes`). |
+| **ms-autenticacao** | Spring Boot 3, Spring Security, JWT | `8081` | Cadastro de usuários, emissão e validação de tokens JWT. |
+| **ms-financeiro** | Spring Boot 3, Spring Data JPA, H2 | `8082` | Gestão de contas bancárias, depósitos, transferências e extratos. |
+| **soap-comprovante** | Java JAX-WS Nativo (sem Spring) | `8088` | Microsserviço provedor SOAP para emissão de comprovantes oficiais com hash SHA-256 e UUID. |
+| **cliente-soap-python**| Python 3, Zeep | - | Cliente consumidor SOAP que comprova interoperabilidade entre tecnologias distintas. |
+
+---
+
+## 🚀 Como Executar o Projeto
+
+### 1. Executando Todos os Serviços via Docker Compose
+
+```bash
+docker compose up -d --build
+```
+Serviços disponíveis:
+* **Frontend:** `http://localhost:3000`
+* **API Gateway & Swagger:** `http://localhost:8080/swagger-ui/index.html`
+* **Serviço SOAP (WSDL):** `http://localhost:8088/ws/comprovante?wsdl`
+
+---
+
+### 2. Executando o Microsserviço SOAP Isoladamente
+
+```bash
+cd backend/soap-comprovante
+java -jar target/soap-comprovante.jar
+```
+* O endpoint SOAP estará ativo em: `http://localhost:8088/ws/comprovante`
+* O contrato WSDL estará em: `http://localhost:8088/ws/comprovante?wsdl`
+
+---
+
+### 3. Executando o Cliente SOAP Consumidor em Python (Zeep)
+
+Para demonstrar a interoperabilidade entre o servidor Java e o cliente Python:
+
+```bash
+cd cliente-soap-python
+pip install -r requirements.txt
+python cliente.py
+```
+O script executa automaticamente 4 testes:
+1. Chamada válida de emissão de comprovante (`gerarComprovante`);
+2. Chamada válida de consulta do comprovante emitido (`consultarComprovante`);
+3. Chamada inválida com valor negativo capturando o `SOAP Fault`;
+4. Chamada inválida com UUID inexistente capturando o `SOAP Fault`.
+
+---
+
+### 4. Testes e Documentação no SoapUI
+
+Um projeto pronto do SoapUI está disponível em:
+`docs/soapui/comprovante-soapui-project.xml`
+
+Basta abrir o SoapUI, selecionar **File -> Import Project** e carregar o arquivo XML para validar as requisições e exportar a documentação do serviço.
+
+---
+
+## 📚 Documentação para Entrega e Apresentação
+
+Consulte o arquivo [`docs/GUIA_APRESENTACAO_E_RELATORIO.md`](docs/GUIA_APRESENTACAO_E_RELATORIO.md) para:
+* Roteiro detalhado dos 4 prints obrigatórios para o PDF do Moodle;
+* Texto da justificativa técnica de até 10 linhas;
+* Roteiro da apresentação prática de até 10 minutos em sala de aula.

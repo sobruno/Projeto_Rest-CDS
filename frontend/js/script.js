@@ -1,10 +1,6 @@
 (function () {
   "use strict";
 
-  /*
-   * DASHBOARD / CARTEIRA
-   */
-
   const pageBody = document.body;
 
   function formatCurrency(value) {
@@ -53,7 +49,6 @@
     const saldoModal = document.getElementById("saldo-modal");
     const avatar = document.getElementById("avatar");
 
-    // ALINHADO COM O ContaDto.java (procura titular ou nome)
     const nomeExibicao = profile?.titular || profile?.nome || "";
 
     if (nomeUsuario) {
@@ -131,7 +126,7 @@
 
     list.innerHTML = transactions
       .map((item) => {
-        // ALINHADO COM O Transacao.java (trata dataHora, DEPOSITO e TRANSFERENCIA)
+
         const isDeposito = item.tipo === "DEPOSITO";
         const isEntrada =
           isDeposito ||
@@ -201,6 +196,42 @@
     });
   }
 
+  function renderComprovante(comprovante, fallback) {
+    const dialog = document.getElementById("dlg-comprovante");
+    if (!dialog) return;
+
+    const valor = comprovante.valor || fallback.valor || 0;
+    const dataHora = comprovante.dataHora || fallback.dataHora || new Date().toISOString();
+    const remetente = comprovante.nomeRemetente || fallback.remetente || "Remetente";
+    const destinatario = comprovante.nomeDestinatario || fallback.destinatario || "Destinatário";
+    const chave = comprovante.chaveDestinatario || fallback.destinatario || "--";
+    const codigo = comprovante.codigoComprovante || "UUID Gerado via SOAP";
+    const hash = comprovante.autenticacaoEletronica || "AUT-SOAP-HASH";
+    const status = comprovante.status || "EMITIDO";
+
+    const elValor = document.getElementById("comp-valor");
+    const elData = document.getElementById("comp-data");
+    const elRemetente = document.getElementById("comp-remetente");
+    const elDestinatario = document.getElementById("comp-destinatario");
+    const elChave = document.getElementById("comp-chave");
+    const elCodigo = document.getElementById("comp-codigo");
+    const elHash = document.getElementById("comp-hash");
+    const elStatus = document.getElementById("comp-status");
+
+    if (elValor) elValor.textContent = formatCurrency(valor);
+    if (elData) elData.textContent = formatDate(dataHora);
+    if (elRemetente) elRemetente.textContent = remetente;
+    if (elDestinatario) elDestinatario.textContent = destinatario;
+    if (elChave) elChave.textContent = chave;
+    if (elCodigo) elCodigo.textContent = codigo;
+    if (elHash) elHash.textContent = hash;
+    if (elStatus) elStatus.textContent = status;
+
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    }
+  }
+
   function bindFormSubmitters() {
     const depositForm = document.getElementById("form-depositar");
     if (depositForm) {
@@ -248,13 +279,24 @@
         }
 
         try {
-          // Envia destinatário (chave/endereço ou ID) e valor
-          await window.CDSApi.transfer({
+
+          const result = await window.CDSApi.transfer({
             destinatario,
             valor,
           });
+
           document.getElementById("dlg-transferir").close();
           transferForm.reset();
+
+          if (result && result.comprovante) {
+            renderComprovante(result.comprovante, {
+              valor,
+              destinatario,
+              remetente: result.titular,
+              dataHora: result.dataHora
+            });
+          }
+
           await loadDashboard();
         } catch (error) {
           console.error("Erro na transferência:", error);
@@ -334,6 +376,48 @@
     }
   }
 
+  function updateWsIndicator(status) {
+    const indicator = document.getElementById("ws-indicator");
+    if (!indicator) return;
+
+    if (status === "connected") {
+      indicator.innerHTML = '<span class="h-2 w-2 rounded-full bg-emerald-500"></span> Ao vivo';
+      indicator.className = "inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 border border-emerald-200";
+    } else if (status === "connecting") {
+      indicator.innerHTML = '<span class="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span> Conectando...';
+      indicator.className = "inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 border border-amber-200";
+    } else {
+      indicator.innerHTML = '<span class="h-2 w-2 rounded-full bg-slate-400"></span> Offline';
+      indicator.className = "inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600";
+    }
+  }
+
+  function initWebSocket() {
+    if (!window.CDSApi || typeof window.CDSApi.connectWebSocket !== "function") {
+      return;
+    }
+
+    window.CDSApi.connectWebSocket(
+      function onMessage(data) {
+        console.log("[NOTIFICACAO WEBSOCKET RECEBIDA]", data);
+        if (data.tipo === "SALDO_ATUALIZADO") {
+
+          if (data.saldo !== null && data.saldo !== undefined) {
+            const saldoEl = document.getElementById("saldo");
+            const saldoModalEl = document.getElementById("saldo-modal");
+            if (saldoEl) saldoEl.textContent = formatCurrency(data.saldo);
+            if (saldoModalEl) saldoModalEl.textContent = formatCurrency(data.saldo);
+          }
+
+          loadDashboard();
+        }
+      },
+      function onStatus(status) {
+        updateWsIndicator(status);
+      }
+    );
+  }
+
   function bindLogoutAction() {
     const logoutButton = document.getElementById("btn-sair");
     if (!logoutButton) {
@@ -374,6 +458,7 @@
     bindLogoutAction();
     bindVerMaisAction();
     loadDashboard();
+    initWebSocket();
   }
 
   initDashboard();
