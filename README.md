@@ -86,11 +86,3 @@ Um projeto pronto do SoapUI está disponível em:
 
 Basta abrir o SoapUI, selecionar **File -> Import Project** e carregar o arquivo XML para validar as requisições e exportar a documentação do serviço.
 
----
-
-## 📚 Documentação para Entrega e Apresentação
-
-Consulte o arquivo [`docs/GUIA_APRESENTACAO_E_RELATORIO.md`](docs/GUIA_APRESENTACAO_E_RELATORIO.md) para:
-* Roteiro detalhado dos 4 prints obrigatórios para o PDF do Moodle;
-* Texto da justificativa técnica de até 10 linhas;
-* Roteiro da apresentação prática de até 10 minutos em sala de aula.
